@@ -39,7 +39,7 @@ func MustOpenDefault() Connection {
 }
 
 func OpenDefault() (Connection, error) {
-	conn, err := grpc.Dial("localhost:5000", grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:6000", grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
