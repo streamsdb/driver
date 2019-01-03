@@ -13,17 +13,18 @@ type MessageInput struct {
 }
 
 type Watch struct {
-	done     chan struct{}
-	Messages <-chan Message
+	cancel context.CancelFunc
+
+	Slices <-chan Slice
 }
 
 func (this Watch) Close() {
-	close(this.done)
+	this.cancel()
 }
 
 type Connection interface {
 	Append(stream string, messages []MessageInput) (int64, error)
-	Watch(stream string, from int64) Watch
+	Watch(stream string, from int64, count int) Watch
 	Read(stream string, from int64, count int) (Slice, error)
 	Close() error
 }
@@ -109,14 +110,15 @@ func (this *grpcConnection) Read(stream string, from int64, count int) (Slice, e
 	}, nil
 }
 
-func (this *grpcConnection) Watch(stream string, from int64) Watch {
-	done := make(chan struct{})
-	messages := make(chan Message)
+func (this *grpcConnection) Watch(stream string, from int64, count int) Watch {
+	ctx, cancel := context.WithCancel(context.Background())
+	slices := make(chan Slice)
 
 	go func() {
-		defer close(messages)
+		defer close(slices)
+		defer cancel()
 
-		watch, err := this.client.Watch(context.Background(), &api.ReadRequest{Stream: stream, From: from, MaxCount: 50})
+		watch, err := this.client.Watch(ctx, &api.ReadRequest{Stream: stream, From: from, MaxCount: uint32(count)})
 		if err != nil {
 			return
 		}
@@ -126,22 +128,31 @@ func (this *grpcConnection) Watch(stream string, from int64) Watch {
 			if err != nil {
 				return
 			}
-			for _, m := range slice.Messages {
-				select {
-				case messages <- Message{
-					Header: m.Header,
-					Value:  m.Value,
-				}:
-					continue
-				case <-done:
-					return
-				}
 
+			messages := make([]Message, len(slice.Messages), len(slice.Messages))
+
+			for i, m := range slice.Messages {
+				messages[i] = Message{Header: m.Header, Value: m.Value}
+			}
+
+			select {
+			case slices <- Slice{
+				Stream:   slice.Stream,
+				From:     slice.From,
+				To:       slice.To,
+				Count:    slice.Count,
+				Next:     slice.Next,
+				HasNext:  slice.HasNext,
+				Head:     slice.Head,
+				Messages: messages,
+			}:
+			case <-ctx.Done():
+				return
 			}
 		}
 	}()
 
-	return Watch{done, messages}
+	return Watch{cancel, slices}
 }
 
 func (this *grpcConnection) Close() error {
