@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"os"
 
 	"github.com/pjvds/streamsdb/api"
 	"google.golang.org/grpc"
@@ -39,7 +40,11 @@ func MustOpenDefault() Connection {
 }
 
 func OpenDefault() (Connection, error) {
-	conn, err := grpc.Dial("localhost:6000", grpc.WithInsecure())
+	address := os.Getenv("SDB")
+	if len(address) == 0 {
+		address = "localhost:6000"
+	}
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
