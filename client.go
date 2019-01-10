@@ -23,11 +23,30 @@ func (this Watch) Close() {
 	this.cancel()
 }
 
-type Connection interface {
+type Collection interface {
 	Append(stream string, messages []MessageInput) (int64, error)
 	Watch(stream string, from int64, count int) Watch
 	Read(stream string, from int64, count int) (Slice, error)
+}
+
+type Connection interface {
+	EnableAcl(username string, password string) error
+	Collection(name string) Collection
 	Close() error
+}
+
+func (this *grpcConnection) EnableAcl(username string, password string) error {
+	_, err := this.client.EnableAcl(context.Background(), &api.EnableAclRequest{
+		Superuser: &api.SuperUser{
+			Username:     username,
+			PasswordHash: []byte(password), // TODO: hash password
+		},
+	})
+	return err
+}
+
+func (this *grpcConnection) Collection(name string) Collection {
+	return &collectionScope{this.client, name}
 }
 
 func MustOpenDefault() Connection {
@@ -53,7 +72,7 @@ func OpenDefault() (Connection, error) {
 	return &grpcConnection{conn, client}, nil
 }
 
-func (this *grpcConnection) Append(stream string, messages []MessageInput) (int64, error) {
+func (this *collectionScope) Append(stream string, messages []MessageInput) (int64, error) {
 	inputs := make([]*api.MessageInput, len(messages), len(messages))
 
 	for i, m := range messages {
@@ -61,8 +80,9 @@ func (this *grpcConnection) Append(stream string, messages []MessageInput) (int6
 	}
 
 	result, err := this.client.Append(context.Background(), &api.AppendRequest{
-		Stream:   stream,
-		Messages: inputs,
+		Collection: this.collection,
+		Stream:     stream,
+		Messages:   inputs,
 	})
 	if err != nil {
 		return 0, err
@@ -86,11 +106,12 @@ type Slice struct {
 	Messages []Message
 }
 
-func (this *grpcConnection) Read(stream string, from int64, count int) (Slice, error) {
+func (this *collectionScope) Read(stream string, from int64, count int) (Slice, error) {
 	slice, err := this.client.Read(context.Background(), &api.ReadRequest{
-		Stream:   stream,
-		From:     from,
-		MaxCount: uint32(count),
+		Collection: this.collection,
+		Stream:     stream,
+		From:       from,
+		Count:      uint32(count),
 	})
 
 	if err != nil {
@@ -115,7 +136,7 @@ func (this *grpcConnection) Read(stream string, from int64, count int) (Slice, e
 	}, nil
 }
 
-func (this *grpcConnection) Watch(stream string, from int64, count int) Watch {
+func (this *collectionScope) Watch(stream string, from int64, count int) Watch {
 	ctx, cancel := context.WithCancel(context.Background())
 	slices := make(chan Slice)
 
@@ -123,7 +144,7 @@ func (this *grpcConnection) Watch(stream string, from int64, count int) Watch {
 		defer close(slices)
 		defer cancel()
 
-		watch, err := this.client.Watch(ctx, &api.ReadRequest{Stream: stream, From: from, MaxCount: uint32(count)})
+		watch, err := this.client.Watch(ctx, &api.ReadRequest{Collection: this.collection, Stream: stream, From: from, Count: uint32(count)})
 		if err != nil {
 			return
 		}
@@ -162,6 +183,11 @@ func (this *grpcConnection) Watch(stream string, from int64, count int) Watch {
 
 func (this *grpcConnection) Close() error {
 	return this.conn.Close()
+}
+
+type collectionScope struct {
+	client     api.StreamsClient
+	collection string
 }
 
 type grpcConnection struct {
