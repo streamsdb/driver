@@ -31,6 +31,7 @@ type Collection interface {
 
 type Connection interface {
 	EnableAcl(username string, password string) error
+	CreateCollection(name string) (Collection, error)
 	Collection(name string) Collection
 	Close() error
 }
@@ -43,6 +44,17 @@ func (this *grpcConnection) EnableAcl(username string, password string) error {
 		},
 	})
 	return err
+}
+func (this *grpcConnection) CreateCollection(name string) (Collection, error) {
+	_, err := this.client.CreateCollection(context.Background(), &api.CreateCollectionRequest{
+		Name: name,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return this.Collection(name), nil
 }
 
 func (this *grpcConnection) Collection(name string) Collection {
