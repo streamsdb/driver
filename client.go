@@ -31,17 +31,28 @@ type Collection interface {
 
 type Connection interface {
 	EnableAcl(username string, password string) error
+	Login(username string, password string) (string, error)
 	CreateCollection(name string) (Collection, error)
 	Collection(name string) Collection
 	Close() error
 }
 
+func (this *grpcConnection) Login(username string, password string) (string, error) {
+	r, err := this.client.Login(context.Background(), &api.LoginRequest{
+		Username: username,
+		Password: password,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return r.Token, nil
+}
+
 func (this *grpcConnection) EnableAcl(username string, password string) error {
 	_, err := this.client.EnableAcl(context.Background(), &api.EnableAclRequest{
-		Superuser: &api.SuperUser{
-			Username:     username,
-			PasswordHash: []byte(password), // TODO: hash password
-		},
+		Username: username,
+		Password: password,
 	})
 	return err
 }
