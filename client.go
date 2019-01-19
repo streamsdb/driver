@@ -6,6 +6,7 @@ import (
 
 	"github.com/pjvds/streamsdb/api"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 type MessageInput struct {
@@ -23,6 +24,15 @@ func (this Watch) Close() {
 	this.cancel()
 }
 
+type TokenAuth string
+
+func (t TokenAuth) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	return map[string]string{"token": string(t)}, nil
+}
+func (t TokenAuth) RequireTransportSecurity() bool {
+	return false
+}
+
 type Collection interface {
 	Append(stream string, messages []MessageInput) (int64, error)
 	Watch(stream string, from int64, count int) Watch
@@ -31,6 +41,7 @@ type Collection interface {
 }
 
 type Connection interface {
+	SetToken(token string) error
 	EnableAcl(username string, password string) error
 	Login(username string, password string) (string, error)
 	CreateUser(username string, password string) error
@@ -38,6 +49,11 @@ type Connection interface {
 	GrandUserToCollection(username string, collection string) error
 	Collection(name string) Collection
 	Close() error
+}
+
+func (this *grpcConnection) SetToken(token string) error {
+	this.ctx = metadata.AppendToOutgoingContext(this.ctx, "token", token)
+	return nil
 }
 
 func (this *grpcConnection) GrandUserToCollection(username string, collection string) error {
@@ -96,17 +112,18 @@ func OpenDefault() (Connection, error) {
 	if len(address) == 0 {
 		address = "localhost:6000"
 	}
+
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
 
 	client := api.NewStreamsClient(conn)
-	return &grpcConnection{conn, client}, nil
+	return &grpcConnection{conn, client, nil}, nil
 }
 
 func (this *grpcConnection) CreateUser(username string, password string) error {
-	_, err := this.client.CreateUser(context.Background(), &api.CreateUserRequest{
+	_, err := this.client.CreateUser(this.ctx, &api.CreateUserRequest{
 		Username: username,
 		Password: password,
 	})
@@ -264,4 +281,5 @@ type collectionScope struct {
 type grpcConnection struct {
 	conn   *grpc.ClientConn
 	client api.StreamsClient
+	ctx    context.Context
 }
