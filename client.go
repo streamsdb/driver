@@ -32,9 +32,18 @@ type Collection interface {
 type Connection interface {
 	EnableAcl(username string, password string) error
 	Login(username string, password string) (string, error)
+	CreateUser(username string, password string) error
 	CreateCollection(name string) (Collection, error)
+	GrandUserToCollection(username string, collection string) error
 	Collection(name string) Collection
 	Close() error
+}
+
+func (this *grpcConnection) GrandUserToCollection(username string, collection string) error {
+	_, err := this.client.GrandUserToCollection(context.Background(), &api.GrandUserToCollectionRequest{
+		Username:   username,
+		Collection: collection})
+	return err
 }
 
 func (this *grpcConnection) Login(username string, password string) (string, error) {
@@ -93,6 +102,14 @@ func OpenDefault() (Connection, error) {
 
 	client := api.NewStreamsClient(conn)
 	return &grpcConnection{conn, client}, nil
+}
+
+func (this *grpcConnection) CreateUser(username string, password string) error {
+	_, err := this.client.CreateUser(context.Background(), &api.CreateUserRequest{
+		Username: username,
+		Password: password,
+	})
+	return err
 }
 
 func (this *collectionScope) Append(stream string, messages []MessageInput) (int64, error) {
