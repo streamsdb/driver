@@ -27,6 +27,7 @@ type Collection interface {
 	Append(stream string, messages []MessageInput) (int64, error)
 	Watch(stream string, from int64, count int) Watch
 	Read(stream string, from int64, count int) (Slice, error)
+	ReadControl(stream string, from int64, count int) (Slice, error)
 }
 
 type Connection interface {
@@ -144,6 +145,36 @@ type Slice struct {
 	HasNext  bool
 	Head     int64
 	Messages []Message
+}
+
+func (this *collectionScope) ReadControl(stream string, from int64, count int) (Slice, error) {
+	slice, err := this.client.ReadControl(context.Background(), &api.ReadRequest{
+		Collection: this.collection,
+		Stream:     stream,
+		From:       from,
+		Count:      uint32(count),
+	})
+
+	if err != nil {
+		return Slice{}, err
+	}
+
+	messages := make([]Message, len(slice.Messages), len(slice.Messages))
+
+	for i, m := range slice.Messages {
+		messages[i] = Message{Header: m.Header, Value: m.Value}
+	}
+
+	return Slice{
+		Stream:   slice.Stream,
+		From:     slice.From,
+		To:       slice.To,
+		Count:    slice.Count,
+		Next:     slice.Next,
+		HasNext:  slice.HasNext,
+		Head:     slice.Head,
+		Messages: messages,
+	}, nil
 }
 
 func (this *collectionScope) Read(stream string, from int64, count int) (Slice, error) {
