@@ -119,9 +119,10 @@ func OpenDefault() (Connection, error) {
 	}
 
 	client := api.NewStreamsClient(conn)
-	return &grpcConnection{conn, client, nil}, nil
+	return &grpcConnection{conn, client, context.Background()}, nil
 }
 
+// TODO: this is not an explicit admin check
 func (this *grpcConnection) CreateUser(username string, password string) error {
 	_, err := this.client.CreateUser(this.ctx, &api.CreateUserRequest{
 		Username: username,
