@@ -113,10 +113,13 @@ func OpenDefault() (Connection, error) {
 		address = "localhost:6000"
 	}
 
+	println("dailing: ", address)
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
+
+	println("state: ", conn.GetState())
 
 	client := api.NewStreamsClient(conn)
 	return &grpcConnection{conn, client, context.Background()}, nil
