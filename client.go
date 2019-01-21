@@ -8,6 +8,9 @@ import (
 	"github.com/pjvds/streamsdb/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/encoding/gzip"
+
+	_ "google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -59,14 +62,14 @@ func (this *grpcConnection) SetToken(token string) error {
 }
 
 func (this *grpcConnection) GrandUserToCollection(username string, collection string) error {
-	_, err := this.client.GrandUserToCollection(context.Background(), &api.GrandUserToCollectionRequest{
+	_, err := this.client.GrandUserToCollection(this.ctx, &api.GrandUserToCollectionRequest{
 		Username:   username,
 		Collection: collection})
 	return err
 }
 
 func (this *grpcConnection) Login(username string, password string) (string, error) {
-	r, err := this.client.Login(context.Background(), &api.LoginRequest{
+	r, err := this.client.Login(this.ctx, &api.LoginRequest{
 		Username: username,
 		Password: password,
 	})
@@ -78,14 +81,14 @@ func (this *grpcConnection) Login(username string, password string) (string, err
 }
 
 func (this *grpcConnection) EnableAcl(username string, password string) error {
-	_, err := this.client.EnableAcl(context.Background(), &api.EnableAclRequest{
+	_, err := this.client.EnableAcl(this.ctx, &api.EnableAclRequest{
 		Username: username,
 		Password: password,
 	})
 	return err
 }
 func (this *grpcConnection) CreateCollection(name string) (Collection, error) {
-	_, err := this.client.CreateCollection(context.Background(), &api.CreateCollectionRequest{
+	_, err := this.client.CreateCollection(this.ctx, &api.CreateCollectionRequest{
 		Name: name,
 	})
 
@@ -97,7 +100,7 @@ func (this *grpcConnection) CreateCollection(name string) (Collection, error) {
 }
 
 func (this *grpcConnection) Collection(name string) Collection {
-	return &collectionScope{this.client, name}
+	return &collectionScope{this.client, name, this.ctx}
 }
 
 func MustOpenDefault() Connection {
@@ -115,13 +118,10 @@ func OpenDefault() (Connection, error) {
 		address = "localhost:6000"
 	}
 
-	println("dailing: ", address)
-	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	conn, err := grpc.Dial(address, grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
 	if err != nil {
 		return nil, err
 	}
-
-	println("state: ", conn.GetState())
 
 	client := api.NewStreamsClient(conn)
 	return &grpcConnection{conn, client, context.Background()}, nil
@@ -143,7 +143,7 @@ func (this *collectionScope) Append(stream string, messages []MessageInput) (int
 		inputs[i] = &api.MessageInput{Header: m.Header, Value: m.Value}
 	}
 
-	result, err := this.client.Append(context.Background(), &api.AppendRequest{
+	result, err := this.client.Append(this.ctx, &api.AppendRequest{
 		Collection: this.collection,
 		Stream:     stream,
 		Messages:   inputs,
@@ -171,7 +171,7 @@ type Slice struct {
 }
 
 func (this *collectionScope) ReadControl(stream string, from int64, count int) (Slice, error) {
-	slice, err := this.client.ReadControl(context.Background(), &api.ReadRequest{
+	slice, err := this.client.ReadControl(this.ctx, &api.ReadRequest{
 		Collection: this.collection,
 		Stream:     stream,
 		From:       from,
@@ -201,7 +201,7 @@ func (this *collectionScope) ReadControl(stream string, from int64, count int) (
 }
 
 func (this *collectionScope) Read(stream string, from int64, count int) (Slice, error) {
-	slice, err := this.client.Read(context.Background(), &api.ReadRequest{
+	slice, err := this.client.Read(this.ctx, &api.ReadRequest{
 		Collection: this.collection,
 		Stream:     stream,
 		From:       from,
@@ -231,7 +231,7 @@ func (this *collectionScope) Read(stream string, from int64, count int) (Slice, 
 }
 
 func (this *collectionScope) Watch(stream string, from int64, count int) Watch {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(this.ctx)
 	slices := make(chan Slice)
 
 	go func() {
@@ -282,6 +282,7 @@ func (this *grpcConnection) Close() error {
 type collectionScope struct {
 	client     api.StreamsClient
 	collection string
+	ctx        context.Context
 }
 
 type grpcConnection struct {
