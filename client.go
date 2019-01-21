@@ -2,10 +2,12 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
 	"os"
 
 	"github.com/pjvds/streamsdb/api"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -114,7 +116,7 @@ func OpenDefault() (Connection, error) {
 	}
 
 	println("dailing: ", address)
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
 	if err != nil {
 		return nil, err
 	}
