@@ -12,7 +12,9 @@ func TestWatchStreamCreation(t *testing.T) {
 	conn := client.MustOpenDefault()
 	defer conn.Close()
 
-	watch := conn.Collection("client-test").Watch("non-existing-stream", 1, 10)
+	col, err := conn.Collection("client-test")
+	assert.NoError(t, err)
+	watch := col.Watch("non-existing-stream", 1, 10)
 	select {
 	case <-time.After(1 * time.Second):
 		break
@@ -21,7 +23,7 @@ func TestWatchStreamCreation(t *testing.T) {
 		return
 	}
 
-	_, err := conn.Collection("client-test").Append("non-existing-stream", []client.MessageInput{{Value: []byte("test")}})
+	_, err = col.Append("non-existing-stream", []client.MessageInput{{Value: []byte("test")}})
 	assert.NoError(t, err)
 
 	select {

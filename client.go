@@ -52,7 +52,7 @@ type Connection interface {
 	CreateUser(username string, password string) error
 	CreateCollection(name string) (Collection, error)
 	GrandUserToCollection(username string, collection string) error
-	Collection(name string) Collection
+	Collection(name string) (Collection, error)
 	Close() error
 }
 
@@ -88,7 +88,7 @@ func (this *grpcConnection) EnableAcl(username string, password string) error {
 	return err
 }
 func (this *grpcConnection) CreateCollection(name string) (Collection, error) {
-	_, err := this.client.CreateCollection(this.ctx, &api.CreateCollectionRequest{
+	r, err := this.client.CreateCollection(this.ctx, &api.CreateCollectionRequest{
 		Name: name,
 	})
 
@@ -96,11 +96,23 @@ func (this *grpcConnection) CreateCollection(name string) (Collection, error) {
 		return nil, err
 	}
 
-	return this.Collection(name), nil
+	return &collectionScope{
+		client:         this.client,
+		collectionId:   r.CollectionId,
+		collectionName: name,
+		ctx:            this.ctx,
+	}, nil
 }
 
-func (this *grpcConnection) Collection(name string) Collection {
-	return &collectionScope{this.client, name, this.ctx}
+func (this *grpcConnection) Collection(name string) (Collection, error) {
+	r, err := this.client.GetCollection(this.ctx, &api.GetCollectionRequest{
+		Name: name,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &collectionScope{this.client, r.Id, r.Name, this.ctx}, nil
 }
 
 func MustOpenDefault() Connection {
@@ -145,9 +157,9 @@ func (this *collectionScope) Append(stream string, messages []MessageInput) (int
 	}
 
 	result, err := this.client.Append(this.ctx, &api.AppendRequest{
-		Collection: this.collection,
-		Stream:     stream,
-		Messages:   inputs,
+		CollectionId: this.collectionId,
+		Stream:       stream,
+		Messages:     inputs,
 	})
 	if err != nil {
 		return 0, err
@@ -173,10 +185,10 @@ type Slice struct {
 
 func (this *collectionScope) ReadControl(stream string, from int64, count int) (Slice, error) {
 	slice, err := this.client.ReadControl(this.ctx, &api.ReadRequest{
-		Collection: this.collection,
-		Stream:     stream,
-		From:       from,
-		Count:      uint32(count),
+		CollectionId: this.collectionId,
+		Stream:       stream,
+		From:         from,
+		Count:        uint32(count),
 	})
 
 	if err != nil {
@@ -203,10 +215,10 @@ func (this *collectionScope) ReadControl(stream string, from int64, count int) (
 
 func (this *collectionScope) Read(stream string, from int64, count int) (Slice, error) {
 	slice, err := this.client.Read(this.ctx, &api.ReadRequest{
-		Collection: this.collection,
-		Stream:     stream,
-		From:       from,
-		Count:      uint32(count),
+		CollectionId: this.collectionId,
+		Stream:       stream,
+		From:         from,
+		Count:        uint32(count),
 	})
 
 	if err != nil {
@@ -239,7 +251,7 @@ func (this *collectionScope) Watch(stream string, from int64, count int) Watch {
 		defer close(slices)
 		defer cancel()
 
-		watch, err := this.client.Watch(ctx, &api.ReadRequest{Collection: this.collection, Stream: stream, From: from, Count: uint32(count)})
+		watch, err := this.client.Watch(ctx, &api.ReadRequest{CollectionId: this.collectionId, Stream: stream, From: from, Count: uint32(count)})
 		if err != nil {
 			return
 		}
@@ -281,9 +293,10 @@ func (this *grpcConnection) Close() error {
 }
 
 type collectionScope struct {
-	client     api.StreamsClient
-	collection string
-	ctx        context.Context
+	client         api.StreamsClient
+	collectionId   uint32
+	collectionName string
+	ctx            context.Context
 }
 
 type grpcConnection struct {
