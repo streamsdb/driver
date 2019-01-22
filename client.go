@@ -124,7 +124,6 @@ func OpenDefault() (Connection, error) {
 		return nil, err
 	}
 
-	println("state: ", conn.GetState())
 	client := api.NewStreamsClient(conn)
 	return &grpcConnection{conn, client, context.Background()}, nil
 }
