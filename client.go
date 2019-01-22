@@ -2,11 +2,13 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
 	"os"
 
 	"github.com/pjvds/streamsdb/api"
 	"google.golang.org/grpc"
 
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 	_ "google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/metadata"
@@ -116,8 +118,8 @@ func OpenDefault() (Connection, error) {
 		address = "localhost:6000"
 	}
 
-	//conn, err := grpc.Dial(address, grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)))
+	conn, err := grpc.Dial(address, grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	//conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)))
 	if err != nil {
 		return nil, err
 	}
