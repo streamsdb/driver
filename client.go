@@ -3,7 +3,9 @@ package client
 import (
 	"context"
 	"crypto/tls"
-	"os"
+	"errors"
+	"net/url"
+	"strings"
 
 	"github.com/pjvds/streamsdb/api"
 	"google.golang.org/grpc"
@@ -46,6 +48,7 @@ type Collection interface {
 }
 
 type Connection interface {
+	IsTokenSet() bool
 	SetToken(token string) error
 	EnableAcl(username string, password string) error
 	Login(username string, password string) (string, error)
@@ -54,6 +57,15 @@ type Connection interface {
 	GrandUserToCollection(username string, collection string) error
 	Collection(name string) (Collection, error)
 	Close() error
+}
+
+func (this *grpcConnection) IsTokenSet() bool {
+	md, ok := metadata.FromIncomingContext(this.ctx)
+	if !ok {
+		return false
+	}
+
+	return len(md.Get("token")) > 0
 }
 
 func (this *grpcConnection) SetToken(token string) error {
@@ -116,7 +128,7 @@ func (this *grpcConnection) Collection(name string) (Collection, error) {
 }
 
 func MustOpenDefault() Connection {
-	conn, err := OpenDefault()
+	conn, err := OpenDefault("localhost:6000?insecure=1")
 	if err != nil {
 		panic(err)
 	}
@@ -124,20 +136,45 @@ func MustOpenDefault() Connection {
 	return conn
 }
 
-func OpenDefault() (Connection, error) {
-	address := os.Getenv("SDB")
-	if len(address) == 0 {
-		address = "localhost:6000"
+func OpenDefault(address string) (Connection, error) {
+	if !strings.HasPrefix(address, "sdb://") {
+		return nil, errors.New("invalid sdb host address: not starting with 'sdb://'")
+	}
+	u, err := url.Parse(address)
+	if err != nil {
+		return nil, err
 	}
 
-	conn, err := grpc.Dial(address, grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
-	//conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)))
+	opts := make([]grpc.DialOption, 0)
+	if u.Query().Get("insecure") == "1" {
+		opts = append(opts, grpc.WithInsecure())
+	}
+	if u.Query().Get("gzip") == "1" {
+		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)))
+	}
+	if u.Query().Get("tls") == "1" {
+		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	}
+
+	println(u.Host)
+	conn, err := grpc.Dial(u.Host, opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	client := api.NewStreamsClient(conn)
-	return &grpcConnection{conn, client, context.Background()}, nil
+	grpcConn := &grpcConnection{conn, client, context.Background()}
+
+	if user := u.User; user != nil {
+		password, _ := user.Password()
+		token, err := grpcConn.Login(user.Username(), password)
+		if err != nil {
+			return nil, err
+		}
+		grpcConn.SetToken(token)
+	}
+
+	return grpcConn, nil
 }
 
 // TODO: this is not an explicit admin check
