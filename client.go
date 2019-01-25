@@ -10,6 +10,7 @@ import (
 	"github.com/pjvds/streamsdb/api"
 	"google.golang.org/grpc"
 
+	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 	_ "google.golang.org/grpc/encoding/gzip"
@@ -154,6 +155,9 @@ func OpenDefault(address string) (Connection, error) {
 	}
 	if u.Query().Get("tls") == "1" {
 		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	}
+	if u.Query().Get("lbrr") == "1" {
+		opts = append(opts, grpc.WithBalancerName(roundrobin.Name))
 	}
 
 	println(u.Host)
