@@ -129,7 +129,7 @@ func (this *grpcConnection) Collection(name string) (Collection, error) {
 }
 
 func MustOpenDefault() Connection {
-	conn, err := OpenDefault("localhost:6000?insecure=1")
+	conn, err := OpenDefault("sdb://localhost:6000?insecure=1")
 	if err != nil {
 		panic(err)
 	}
