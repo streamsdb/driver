@@ -1,9 +1,9 @@
-package client
+package streamsdb
 
 import (
 	"context"
 	"crypto/tls"
-	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -19,13 +19,14 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-// MessageInput helds the data that can be added to
-// a stream.
+// MessageInput helds the data to be appended to a stream.
 type MessageInput struct {
-	// The name of the event type.
-	Type     string
-	Metadata []byte
-	Value    []byte
+	// The name of the message type.
+	Type string
+	// The headers that will be included in the record.
+	Headers []byte
+	// The content of the message.
+	Value []byte
 }
 
 type Watch struct {
@@ -35,15 +36,6 @@ type Watch struct {
 
 func (this Watch) Close() {
 	this.cancel()
-}
-
-type TokenAuth string
-
-func (t TokenAuth) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
-	return map[string]string{"token": string(t)}, nil
-}
-func (t TokenAuth) RequireTransportSecurity() bool {
-	return false
 }
 
 type Collection interface {
@@ -56,15 +48,13 @@ type Collection interface {
 type Connection interface {
 	IsTokenSet() bool
 	SetToken(token string) error
-	EnableAcl(username string, password string) error
 	Login(username string, password string) (string, error)
-	CreateUser(username string, password string) error
-	CreateCollection(name string) (Collection, error)
-	GrandUserToCollection(username string, collection string) error
 	Collection(name string) (Collection, error)
 	Close() error
+	System() System
 }
 
+// IsTokenSet determines whether a token is set of this connection or not.
 func (this *grpcConnection) IsTokenSet() bool {
 	md, ok := metadata.FromIncomingContext(this.ctx)
 	if !ok {
@@ -74,16 +64,11 @@ func (this *grpcConnection) IsTokenSet() bool {
 	return len(md.Get("token")) > 0
 }
 
+// SetToken set a token for this connection that will be included in every
+// subsequent request.
 func (this *grpcConnection) SetToken(token string) error {
 	this.ctx = metadata.AppendToOutgoingContext(this.ctx, "token", token)
 	return nil
-}
-
-func (this *grpcConnection) GrandUserToCollection(username string, collection string) error {
-	_, err := this.client.GrandUserToCollection(this.ctx, &api.GrandUserToCollectionRequest{
-		Username:   username,
-		Collection: collection})
-	return err
 }
 
 func (this *grpcConnection) Login(username string, password string) (string, error) {
@@ -98,30 +83,6 @@ func (this *grpcConnection) Login(username string, password string) (string, err
 	return r.Token, nil
 }
 
-func (this *grpcConnection) EnableAcl(username string, password string) error {
-	_, err := this.client.EnableAcl(this.ctx, &api.EnableAclRequest{
-		Username: username,
-		Password: password,
-	})
-	return err
-}
-func (this *grpcConnection) CreateCollection(name string) (Collection, error) {
-	r, err := this.client.CreateCollection(this.ctx, &api.CreateCollectionRequest{
-		Name: name,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &collectionScope{
-		client:         this.client,
-		collectionId:   r.CollectionId,
-		collectionName: name,
-		ctx:            this.ctx,
-	}, nil
-}
-
 func (this *grpcConnection) Collection(name string) (Collection, error) {
 	r, err := this.client.GetCollection(this.ctx, &api.GetCollectionRequest{
 		Name: name,
@@ -134,7 +95,7 @@ func (this *grpcConnection) Collection(name string) (Collection, error) {
 }
 
 func MustOpenDefault() Connection {
-	conn, err := OpenDefault("sdb://localhost:6000?insecure=1")
+	conn, err := Open("sdb://localhost:6000?insecure=1")
 	if err != nil {
 		panic(err)
 	}
@@ -142,11 +103,15 @@ func MustOpenDefault() Connection {
 	return conn
 }
 
-func OpenDefault(address string) (Connection, error) {
-	if !strings.HasPrefix(address, "sdb://") {
-		return nil, errors.New("invalid sdb host address: not starting with 'sdb://'")
+// Open opens a connection to the specified streamsdb.
+//
+// The format of the url is:
+// sdb://[username:password@]host[:port]/[collection]?[option_name]=[option_value]
+func Open(cs string) (Connection, error) {
+	if !strings.HasPrefix(cs, "sdb://") {
+		return nil, fmt.Errorf("invalid streamsdb connection string '%v': not starting with 'sdb://'", cs)
 	}
-	u, err := url.Parse(address)
+	u, err := url.Parse(cs)
 	if err != nil {
 		return nil, err
 	}
@@ -186,20 +151,11 @@ func OpenDefault(address string) (Connection, error) {
 	return grpcConn, nil
 }
 
-// TODO: this is not an explicit admin check
-func (this *grpcConnection) CreateUser(username string, password string) error {
-	_, err := this.client.CreateUser(this.ctx, &api.CreateUserRequest{
-		Username: username,
-		Password: password,
-	})
-	return err
-}
-
 func (this *collectionScope) Append(stream string, messages []MessageInput) (int64, error) {
 	inputs := make([]*api.MessageInput, len(messages), len(messages))
 
 	for i, m := range messages {
-		inputs[i] = &api.MessageInput{Type: m.Type, Metadata: m.Metadata, Value: m.Value}
+		inputs[i] = &api.MessageInput{Type: m.Type, Metadata: m.Headers, Value: m.Value}
 	}
 
 	result, err := this.client.Append(this.ctx, &api.AppendRequest{

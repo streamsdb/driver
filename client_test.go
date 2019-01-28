@@ -70,9 +70,9 @@ func TestReadStream(t *testing.T) {
 			HasNext: false,
 			Head:    10,
 			Messages: []client.Message{
-				{Header: messages[7].Metadata, Value: messages[7].Value},
-				{Header: messages[8].Metadata, Value: messages[8].Value},
-				{Header: messages[9].Metadata, Value: messages[9].Value},
+				{Header: messages[7].Headers, Value: messages[7].Value},
+				{Header: messages[8].Headers, Value: messages[8].Value},
+				{Header: messages[9].Headers, Value: messages[9].Value},
 			},
 		}, slice)
 	})
