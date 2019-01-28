@@ -1,4 +1,4 @@
-package streamsdb
+package client
 
 import (
 	"context"
