@@ -6,7 +6,9 @@ import (
 	"errors"
 	"net/url"
 	"strings"
+	"time"
 
+	"github.com/gogo/protobuf/types"
 	"github.com/pjvds/streamsdb/api"
 	"google.golang.org/grpc"
 
@@ -17,14 +19,17 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+// MessageInput helds the data that can be added to
+// a stream.
 type MessageInput struct {
-	Header []byte
-	Value  []byte
+	// The name of the event type.
+	Type     string
+	Metadata []byte
+	Value    []byte
 }
 
 type Watch struct {
 	cancel context.CancelFunc
-
 	Slices <-chan Slice
 }
 
@@ -194,7 +199,7 @@ func (this *collectionScope) Append(stream string, messages []MessageInput) (int
 	inputs := make([]*api.MessageInput, len(messages), len(messages))
 
 	for i, m := range messages {
-		inputs[i] = &api.MessageInput{Header: m.Header, Value: m.Value}
+		inputs[i] = &api.MessageInput{Type: m.Type, Metadata: m.Metadata, Value: m.Value}
 	}
 
 	result, err := this.client.Append(this.ctx, &api.AppendRequest{
@@ -209,8 +214,10 @@ func (this *collectionScope) Append(stream string, messages []MessageInput) (int
 }
 
 type Message struct {
-	Header []byte
-	Value  []byte
+	Type      string
+	Timestamp time.Time
+	Header    []byte
+	Value     []byte
 }
 
 type Slice struct {
@@ -239,7 +246,13 @@ func (this *collectionScope) ReadControl(stream string, from int64, count int) (
 	messages := make([]Message, len(slice.Messages), len(slice.Messages))
 
 	for i, m := range slice.Messages {
-		messages[i] = Message{Header: m.Header, Value: m.Value}
+		timestamp, _ := types.TimestampFromProto(m.Timestamp)
+
+		messages[i] = Message{
+			Type:      m.Type,
+			Timestamp: timestamp,
+			Header:    m.Metadata,
+			Value:     m.Value}
 	}
 
 	return Slice{
@@ -269,7 +282,13 @@ func (this *collectionScope) Read(stream string, from int64, count int) (Slice, 
 	messages := make([]Message, len(slice.Messages), len(slice.Messages))
 
 	for i, m := range slice.Messages {
-		messages[i] = Message{Header: m.Header, Value: m.Value}
+		timestamp, _ := types.TimestampFromProto(m.Timestamp)
+
+		messages[i] = Message{
+			Type:      m.Type,
+			Timestamp: timestamp,
+			Header:    m.Metadata,
+			Value:     m.Value}
 	}
 
 	return Slice{
@@ -306,7 +325,14 @@ func (this *collectionScope) Watch(stream string, from int64, count int) Watch {
 			messages := make([]Message, len(slice.Messages), len(slice.Messages))
 
 			for i, m := range slice.Messages {
-				messages[i] = Message{Header: m.Header, Value: m.Value}
+				timestamp, _ := types.TimestampFromProto(m.Timestamp)
+
+				messages[i] = Message{
+					Type:      m.Type,
+					Timestamp: timestamp,
+					Header:    m.Metadata,
+					Value:     m.Value}
+
 			}
 
 			select {
