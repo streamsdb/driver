@@ -84,6 +84,10 @@ func (this *grpcConnection) Login(username string, password string) (string, err
 }
 
 func (this *grpcConnection) Collection(name string) (Collection, error) {
+	if len(name) == 0 {
+		name = strings.TrimPrefix(this.col, "/")
+	}
+
 	r, err := this.client.GetCollection(this.ctx, &api.GetCollectionRequest{
 		Name: name,
 	})
@@ -137,7 +141,7 @@ func Open(cs string) (Connection, error) {
 	}
 
 	client := api.NewStreamsClient(conn)
-	grpcConn := &grpcConnection{conn, client, context.Background()}
+	grpcConn := &grpcConnection{conn, client, context.Background(), u.Path}
 
 	if user := u.User; user != nil {
 		password, _ := user.Password()
@@ -326,4 +330,5 @@ type grpcConnection struct {
 	conn   *grpc.ClientConn
 	client api.StreamsClient
 	ctx    context.Context
+	col    string
 }
