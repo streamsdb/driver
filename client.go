@@ -32,6 +32,11 @@ type MessageInput struct {
 type Watch struct {
 	cancel context.CancelFunc
 	Slices <-chan Slice
+	err    error
+}
+
+func (this Watch) Err() error {
+	return this.err
 }
 
 func (this Watch) Close() {
@@ -40,7 +45,7 @@ func (this Watch) Close() {
 
 type Collection interface {
 	Append(stream string, messages []MessageInput) (int64, error)
-	Watch(stream string, from int64, count int) Watch
+	Watch(stream string, from int64, count int) *Watch
 	Read(stream string, from int64, count int) (Slice, error)
 	ReadControl(stream string, from int64, count int) (Slice, error)
 }
@@ -263,9 +268,10 @@ func (this *collectionScope) Read(stream string, from int64, count int) (Slice, 
 	}, nil
 }
 
-func (this *collectionScope) Watch(stream string, from int64, count int) Watch {
+func (this *collectionScope) Watch(stream string, from int64, count int) *Watch {
 	ctx, cancel := context.WithCancel(this.ctx)
 	slices := make(chan Slice)
+	result := Watch{cancel, slices, nil}
 
 	go func() {
 		defer close(slices)
@@ -279,6 +285,7 @@ func (this *collectionScope) Watch(stream string, from int64, count int) Watch {
 		for {
 			slice, err := watch.Recv()
 			if err != nil {
+				result.err = err
 				return
 			}
 
@@ -312,7 +319,7 @@ func (this *collectionScope) Watch(stream string, from int64, count int) Watch {
 		}
 	}()
 
-	return Watch{cancel, slices}
+	return &result
 }
 
 func (this *grpcConnection) Close() error {
