@@ -3,7 +3,6 @@ package client_test
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/pjvds/streamsdb/client"
 	"github.com/stretchr/testify/assert"
@@ -18,9 +17,9 @@ func TestAppendAndReadRoundtrip(t *testing.T) {
 
 	sid := "stream-id"
 	messages := []client.MessageInput{
-		{Value: []byte("value-1")},
-		{Value: []byte("value-2")},
-		{Value: []byte("value-3")},
+		{Type: "testmessage", Value: []byte("value-1")},
+		{Type: "testmessage", Value: []byte("value-2")},
+		{Type: "testmessage", Value: []byte("value-3")},
 	}
 
 	// stream creation
@@ -29,14 +28,12 @@ func TestAppendAndReadRoundtrip(t *testing.T) {
 
 	slice, err := col.Read(sid, pos, 10)
 	assert.NoError(t, err)
-	assert.Equal(t, client.Slice{
-		From:    1,
-		To:      3,
-		Next:    4,
-		HasNext: false,
-		Head:    3,
-	}, slice)
 
+	assert.Equal(t, sid, slice.Stream)
+	assert.Equal(t, pos, slice.From)
+	assert.Equal(t, pos+3, slice.Next)
+	assert.Equal(t, false, slice.HasNext)
+	assert.Equal(t, pos+2, slice.Head)
 }
 
 func TestReadStream(t *testing.T) {
@@ -78,6 +75,7 @@ func TestReadStream(t *testing.T) {
 	})
 }
 
+/*
 func TestWatchStreamCreation(t *testing.T) {
 	conn := client.MustOpenDefault()
 	defer conn.Close()
@@ -104,3 +102,4 @@ func TestWatchStreamCreation(t *testing.T) {
 		return
 	}
 }
+*/
