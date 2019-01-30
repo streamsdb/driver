@@ -10,6 +10,7 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/pjvds/streamsdb/api"
+	"github.com/pjvds/streamsdb/mathi"
 	"google.golang.org/grpc"
 
 	"google.golang.org/grpc/balancer/roundrobin"
@@ -220,12 +221,13 @@ func (this *collectionScope) ReadControl(stream string, from int64, count int) (
 			Value:     m.Value}
 	}
 
+	to := mathi.Max64(slice.From, slice.From+int64(len(slice.Messages)))
 	return Slice{
-		Stream:   slice.Stream,
+		Stream:   stream,
 		From:     slice.From,
-		To:       slice.To,
-		Count:    slice.Count,
-		Next:     slice.Next,
+		To:       to,
+		Count:    int32(len(slice.Messages)),
+		Next:     to + 1,
 		HasNext:  slice.HasNext,
 		Head:     slice.Head,
 		Messages: messages,
@@ -256,12 +258,13 @@ func (this *collectionScope) Read(stream string, from int64, count int) (Slice, 
 			Value:     m.Value}
 	}
 
+	to := mathi.Max64(slice.From, slice.From+int64(len(slice.Messages)))
 	return Slice{
-		Stream:   slice.Stream,
+		Stream:   stream,
 		From:     slice.From,
-		To:       slice.To,
-		Count:    slice.Count,
-		Next:     slice.Next,
+		To:       to,
+		Count:    int32(len(slice.Messages)),
+		Next:     to + 1,
 		HasNext:  slice.HasNext,
 		Head:     slice.Head,
 		Messages: messages,
@@ -302,17 +305,19 @@ func (this *collectionScope) Watch(stream string, from int64, count int) *Watch 
 
 			}
 
-			select {
-			case slices <- Slice{
-				Stream:   slice.Stream,
+			to := mathi.Max64(slice.From, slice.From+int64(len(slice.Messages)))
+			s := Slice{
+				Stream:   stream,
 				From:     slice.From,
-				To:       slice.To,
-				Count:    slice.Count,
-				Next:     slice.Next,
+				To:       to,
+				Count:    int32(len(slice.Messages)),
+				Next:     to + 1,
 				HasNext:  slice.HasNext,
 				Head:     slice.Head,
 				Messages: messages,
-			}:
+			}
+			select {
+			case slices <- s:
 			case <-ctx.Done():
 				return
 			}
