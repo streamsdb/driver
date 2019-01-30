@@ -292,7 +292,7 @@ func (this *collectionScope) Watch(stream string, from int64, count int) *Watch 
 				return
 			}
 
-			messages := make([]Message, len(slice.Messages), len(slice.Messages))
+			messages := make([]Message, len(slice.Messages))
 
 			for i, m := range slice.Messages {
 				timestamp, _ := types.TimestampFromProto(m.Timestamp)
