@@ -31,9 +31,11 @@ func TestAppendAndReadRoundtrip(t *testing.T) {
 
 	assert.Equal(t, sid, slice.Stream)
 	assert.Equal(t, pos, slice.From)
+	assert.Equal(t, pos+2, slice.To)
 	assert.Equal(t, pos+3, slice.Next)
 	assert.Equal(t, false, slice.HasNext)
 	assert.Equal(t, pos+2, slice.Head)
+	assert.Equal(t, 3, len(slice.Messages))
 }
 
 func TestReadStream(t *testing.T) {
@@ -62,7 +64,6 @@ func TestReadStream(t *testing.T) {
 			Stream:  stream,
 			From:    7,
 			To:      10,
-			Count:   3,
 			Next:    11,
 			HasNext: false,
 			Head:    10,
