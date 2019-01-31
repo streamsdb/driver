@@ -1,0 +1,51 @@
+package main
+
+import (
+	"bufio"
+	"log"
+	"os"
+
+	"github.com/pkg/errors"
+	sdb "github.com/streamsdb/driver"
+)
+
+func main() {
+	// create streamsdb connection
+	conn := sdb.MustOpen("sdb://sdb03.streamsdb.io:443?tls=1")
+	defer conn.Close()
+
+	// open the example database
+	db, err := conn.Collection("example")
+	if err != nil {
+		log.Fatalf("failed to open db: %s", err)
+	}
+
+	// create a channel to get notified from any errors
+	errs := make(chan error)
+
+	// read user input from stdin and append it to the stream
+	go func() {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			_, err := db.Append("inputs", sdb.MessageInput{Value: scanner.Bytes()})
+			if err != nil {
+				errs <- errors.Wrap(err, "append error")
+				return
+			}
+		}
+	}()
+
+	// watch the inputs streams for messages and print them
+	go func() {
+		watch := db.Watch("inputs", -1, 10)
+		for slice := range watch.Slices {
+			for _, msg := range slice.Messages {
+				println("received: ", string(msg.Value))
+			}
+		}
+
+		errs <- errors.Wrap(watch.Err(), "watch error")
+	}()
+
+	log.Fatalf((<-errs).Error())
+}
