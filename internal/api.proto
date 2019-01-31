@@ -1,0 +1,124 @@
+syntax = "proto3";
+package streamsdb;
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+option go_package = "pb";
+
+// Enable unsafe Marshal method.
+option (gogoproto.unsafe_marshaler_all) = true;
+// Enable unsafe Unmarshal method.
+option (gogoproto.unsafe_unmarshaler_all) = true;
+// Enable custom Size method (Required by Marshal and Unmarshal).
+option (gogoproto.sizer_all) = true;
+// Enable registration with golang/protobuf for the grpc-gateway.
+option (gogoproto.goproto_registration) = true;
+// Enable generation of XXX_MessageName methods for grpc-go/status.
+option (gogoproto.messagename_all) = false;
+
+service Streams {
+  rpc GetCollection(GetCollectionRequest) returns (GetCollectionReply);
+  rpc Login(LoginRequest) returns (LoginReply);
+  rpc EnableAcl(EnableAclRequest) returns (EnableAclReply) {}
+  rpc GrandUserToCollection(GrandUserToCollectionRequest) returns (GrandUserToCollectionReply){}
+  rpc CreateUser(CreateUserRequest) returns (CreateUserReply){}
+  rpc CreateCollection(CreateCollectionRequest) returns (CreateCollectionReply) {}
+  // Sends a greeting
+  rpc Read (ReadRequest) returns (Slice) {}
+  rpc ReadControl (ReadRequest) returns (Slice) {}
+  rpc Append (AppendRequest) returns (AppendReply) {}
+  rpc Watch (ReadRequest) returns (stream Slice) {}
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginReply {
+  string token = 1;
+}
+
+message EnableAclRequest{
+  string username = 1;
+  string password = 2;
+  bytes signature = 3 [(gogoproto.customtype) = "github.com/streamsdb/driver/internal/wire.Bytes", (gogoproto.nullable) = false];
+}
+
+message GetCollectionRequest{
+  string name = 1;
+}
+
+message GetCollectionReply{
+  uint32 id = 1;
+  string name = 2;
+}
+
+message EnableAclReply{
+}
+
+message GrandUserToCollectionRequest {
+  string username = 1;
+  string collection = 2;
+}
+
+message GrandUserToCollectionReply{
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message CreateUserReply {
+}
+
+message CreateCollectionRequest {
+  string name = 1;
+}
+
+message CreateCollectionReply {
+  uint32 collectionId = 1;
+}
+
+// The request message containing the user's name.
+message ReadRequest {
+  uint32 collectionId = 1;
+  string stream = 2;
+  int64 from = 3;
+  uint32 count = 4;
+}
+
+message Message {
+
+  string type = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  bytes metadata = 3 [(gogoproto.customtype) = "github.com/streamsdb/driver/internal/wire.Bytes", (gogoproto.nullable) = false];
+  bytes value = 4 [(gogoproto.customtype) = "github.com/streamsdb/driver/internal/wire.Bytes", (gogoproto.nullable) = false];
+}
+
+message Slice {
+  string stream = 1;
+  int64 from = 2;
+  int64 to = 3;
+  int32 count = 4;
+  int64 next = 5;
+  bool hasNext = 6;
+  int64 head = 7;
+  repeated Message messages = 8;
+}
+
+message MessageInput {
+  string type = 1;
+  bytes metadata = 2 [(gogoproto.customtype) = "github.com/streamsdb/driver/internal/wire.Bytes", (gogoproto.nullable) = false];
+  bytes value = 3[(gogoproto.customtype) = "github.com/streamsdb/driver/internal/wire.Bytes", (gogoproto.nullable) = false];
+}
+
+message AppendRequest {
+  uint32 collectionId = 1;
+  string stream = 2;
+  repeated MessageInput messages = 3;
+}
+
+message AppendReply {
+  int64 from = 1;
+}

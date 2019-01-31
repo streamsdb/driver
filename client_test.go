@@ -1,22 +1,22 @@
-package client_test
+package sdb_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/pjvds/streamsdb/client"
+	sdb "github.com/streamsdb/driver"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAppendAndReadRoundtrip(t *testing.T) {
-	conn := client.MustOpenDefault()
+	conn := sdb.MustOpenDefault()
 	defer conn.Close()
 
-	col, err := conn.Collection("client-test")
+	col, err := conn.Collection("sdb-test")
 	assert.NoError(t, err)
 
 	sid := "stream-id"
-	messages := []client.MessageInput{
+	messages := []sdb.MessageInput{
 		{Type: "testmessage", Value: []byte("value-1")},
 		{Type: "testmessage", Value: []byte("value-2")},
 		{Type: "testmessage", Value: []byte("value-3")},
@@ -39,16 +39,16 @@ func TestAppendAndReadRoundtrip(t *testing.T) {
 }
 
 func TestReadStream(t *testing.T) {
-	conn := client.MustOpenDefault()
+	conn := sdb.MustOpenDefault()
 	defer conn.Close()
 
-	col, err := conn.Collection("client-test")
+	col, err := conn.Collection("sdb-test")
 	assert.NoError(t, err)
 
 	stream := t.Name() + "-stream"
-	messages := make([]client.MessageInput, 10, 10)
+	messages := make([]sdb.MessageInput, 10, 10)
 	for i := range messages {
-		messages[i] = client.MessageInput{
+		messages[i] = sdb.MessageInput{
 			Value: []byte(fmt.Sprintf("value-%v", i)),
 		}
 	}
@@ -60,14 +60,14 @@ func TestReadStream(t *testing.T) {
 		slice, err := col.Read(stream, -3, 3)
 		assert.NoError(t, err)
 
-		assert.Equal(t, client.Slice{
+		assert.Equal(t, sdb.Slice{
 			Stream:  stream,
 			From:    7,
 			To:      10,
 			Next:    11,
 			HasNext: false,
 			Head:    10,
-			Messages: []client.Message{
+			Messages: []sdb.Message{
 				{Header: messages[7].Headers, Value: messages[7].Value},
 				{Header: messages[8].Headers, Value: messages[8].Value},
 				{Header: messages[9].Headers, Value: messages[9].Value},
@@ -78,10 +78,10 @@ func TestReadStream(t *testing.T) {
 
 /*
 func TestWatchStreamCreation(t *testing.T) {
-	conn := client.MustOpenDefault()
+	conn := sdb.MustOpenDefault()
 	defer conn.Close()
 
-	col, err := conn.Collection("client-test")
+	col, err := conn.Collection("sdb-test")
 	assert.NoError(t, err)
 	watch := col.Watch("non-existing-stream", 1, 10)
 	select {
@@ -92,7 +92,7 @@ func TestWatchStreamCreation(t *testing.T) {
 		return
 	}
 
-	_, err = col.Append("non-existing-stream", []client.MessageInput{{Value: []byte("test")}})
+	_, err = col.Append("non-existing-stream", []sdb.MessageInput{{Value: []byte("test")}})
 	assert.NoError(t, err)
 
 	select {

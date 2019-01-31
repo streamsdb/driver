@@ -1,6 +1,6 @@
-package client
+package sdb
 
-import "github.com/pjvds/streamsdb/api"
+import "github.com/streamsdb/driver/internal/pb"
 
 type System interface {
 	EnableAcl(username string, password string) error
@@ -14,7 +14,7 @@ func (this *grpcConnection) System() System {
 }
 
 func (this *grpcConnection) EnableAcl(username string, password string) error {
-	_, err := this.client.EnableAcl(this.ctx, &api.EnableAclRequest{
+	_, err := this.client.EnableAcl(this.ctx, &pb.EnableAclRequest{
 		Username: username,
 		Password: password,
 	})
@@ -22,7 +22,7 @@ func (this *grpcConnection) EnableAcl(username string, password string) error {
 }
 
 func (this *grpcConnection) CreateUser(username string, password string) error {
-	_, err := this.client.CreateUser(this.ctx, &api.CreateUserRequest{
+	_, err := this.client.CreateUser(this.ctx, &pb.CreateUserRequest{
 		Username: username,
 		Password: password,
 	})
@@ -30,7 +30,7 @@ func (this *grpcConnection) CreateUser(username string, password string) error {
 }
 
 func (this *grpcConnection) CreateCollection(name string) (Collection, error) {
-	r, err := this.client.CreateCollection(this.ctx, &api.CreateCollectionRequest{
+	r, err := this.client.CreateCollection(this.ctx, &pb.CreateCollectionRequest{
 		Name: name,
 	})
 
@@ -46,7 +46,7 @@ func (this *grpcConnection) CreateCollection(name string) (Collection, error) {
 	}, nil
 }
 func (this *grpcConnection) GrandUserToCollection(username string, collection string) error {
-	_, err := this.client.GrandUserToCollection(this.ctx, &api.GrandUserToCollectionRequest{
+	_, err := this.client.GrandUserToCollection(this.ctx, &pb.GrandUserToCollectionRequest{
 		Username:   username,
 		Collection: collection})
 	return err
