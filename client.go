@@ -10,8 +10,7 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
-	"github.com/streamsdb/driver/internal/pb"
-	"github.com/streamsdb/driver/internal/wire"
+	"github.com/streamsdb/driver/internal/api"
 	"google.golang.org/grpc"
 
 	"google.golang.org/grpc/balancer/roundrobin"
@@ -56,7 +55,7 @@ func (this *Watch) Cancel() {
 	this.cancel()
 }
 
-type Collection interface {
+type DB interface {
 	Append(stream string, messages ...MessageInput) (int64, error)
 	Watch(stream string, from int64, count int) *Watch
 	Read(stream string, from int64, count int) (Slice, error)
@@ -72,7 +71,7 @@ type Connection interface {
 	// If a collection was specified in the connection string of
 	// the client, passing an empty name (""), will returns
 	// a handle to that collection.
-	Collection(name string) (Collection, error)
+	DB(name string) DB
 	Close() error
 	System() System
 }
@@ -95,7 +94,7 @@ func (this *grpcConnection) SetToken(token string) error {
 }
 
 func (this *grpcConnection) Login(username string, password string) (string, error) {
-	r, err := this.client.Login(this.ctx, &pb.LoginRequest{
+	r, err := this.client.Login(this.ctx, &api.LoginRequest{
 		Username: username,
 		Password: password,
 	})
@@ -106,19 +105,12 @@ func (this *grpcConnection) Login(username string, password string) (string, err
 	return r.Token, nil
 }
 
-func (this *grpcConnection) Collection(name string) (Collection, error) {
+func (this *grpcConnection) DB(name string) DB {
 	if len(name) == 0 {
 		name = strings.TrimPrefix(this.col, "/")
 	}
 
-	r, err := this.client.GetCollection(this.ctx, &pb.GetCollectionRequest{
-		Name: name,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &collectionScope{this.client, r.Id, r.Name, this.ctx}, nil
+	return &collectionScope{this.client, name, this.ctx}
 }
 
 func MustOpenDefault() Connection {
@@ -172,7 +164,7 @@ func Open(cs string) (Connection, error) {
 		return nil, err
 	}
 
-	client := pb.NewStreamsClient(conn)
+	client := api.NewStreamsClient(conn)
 	grpcConn := &grpcConnection{conn, client, context.Background(), u.Path}
 
 	if user := u.User; user != nil {
@@ -188,16 +180,16 @@ func Open(cs string) (Connection, error) {
 }
 
 func (this *collectionScope) Append(stream string, messages ...MessageInput) (int64, error) {
-	inputs := make([]*pb.MessageInput, len(messages), len(messages))
+	inputs := make([]*api.MessageInput, len(messages), len(messages))
 
 	for i, m := range messages {
-		inputs[i] = &pb.MessageInput{Type: m.Type, Metadata: wire.Bytes(m.Headers), Value: wire.Bytes(m.Value)}
+		inputs[i] = &api.MessageInput{Type: m.Type, Metadata: m.Headers, Value: m.Value}
 	}
 
-	result, err := this.client.Append(this.ctx, &pb.AppendRequest{
-		CollectionId: this.collectionId,
-		Stream:       stream,
-		Messages:     inputs,
+	result, err := this.client.Append(this.ctx, &api.AppendRequest{
+		Database: this.db,
+		Stream:   stream,
+		Messages: inputs,
 	})
 
 	if err != nil {
@@ -223,47 +215,12 @@ type Slice struct {
 	Messages []Message
 }
 
-func (this *collectionScope) ReadControl(stream string, from int64, count int) (Slice, error) {
-	slice, err := this.client.ReadControl(this.ctx, &pb.ReadRequest{
-		CollectionId: this.collectionId,
-		Stream:       stream,
-		From:         from,
-		Count:        uint32(count),
-	})
-
-	if err != nil {
-		return Slice{}, err
-	}
-
-	messages := make([]Message, len(slice.Messages), len(slice.Messages))
-
-	for i, m := range slice.Messages {
-		timestamp, _ := types.TimestampFromProto(m.Timestamp)
-
-		messages[i] = Message{
-			Type:      m.Type,
-			Timestamp: timestamp,
-			Header:    m.Metadata,
-			Value:     m.Value}
-	}
-
-	return Slice{
-		Stream:   stream,
-		From:     slice.From,
-		To:       slice.To,
-		Next:     slice.Next,
-		HasNext:  slice.HasNext,
-		Head:     slice.Head,
-		Messages: messages,
-	}, nil
-}
-
 func (this *collectionScope) Read(stream string, from int64, count int) (Slice, error) {
-	slice, err := this.client.Read(this.ctx, &pb.ReadRequest{
-		CollectionId: this.collectionId,
-		Stream:       stream,
-		From:         from,
-		Count:        uint32(count),
+	slice, err := this.client.Read(this.ctx, &api.ReadRequest{
+		Database: this.db,
+		Stream:   stream,
+		From:     from,
+		Count:    uint32(count),
 	})
 
 	if err != nil {
@@ -302,7 +259,7 @@ func (this *collectionScope) Watch(stream string, from int64, count int) *Watch 
 		defer close(slices)
 		defer cancel()
 
-		watch, err := this.client.Watch(ctx, &pb.ReadRequest{CollectionId: this.collectionId, Stream: stream, From: from, Count: uint32(count)})
+		watch, err := this.client.Watch(ctx, &api.ReadRequest{Database: this.db, Stream: stream, From: from, Count: uint32(count)})
 		if err != nil {
 			result.err = err
 			return
@@ -354,15 +311,14 @@ func (this *grpcConnection) Close() error {
 }
 
 type collectionScope struct {
-	client         pb.StreamsClient
-	collectionId   uint32
-	collectionName string
-	ctx            context.Context
+	client api.StreamsClient
+	db     string
+	ctx    context.Context
 }
 
 type grpcConnection struct {
 	conn   *grpc.ClientConn
-	client pb.StreamsClient
+	client api.StreamsClient
 	ctx    context.Context
 	col    string
 }

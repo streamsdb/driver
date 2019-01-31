@@ -1,12 +1,14 @@
 package sdb
 
-import "github.com/streamsdb/driver/internal/pb"
+import (
+	"github.com/streamsdb/driver/internal/api"
+)
 
 type System interface {
 	EnableAcl(username string, password string) error
 	CreateUser(username string, password string) error
-	CreateCollection(name string) (Collection, error)
-	GrandUserToCollection(username string, collection string) error
+	CreateDatabase(name string) (DB, error)
+	GrandUserToDatabase(username string, database string) error
 }
 
 func (this *grpcConnection) System() System {
@@ -14,7 +16,7 @@ func (this *grpcConnection) System() System {
 }
 
 func (this *grpcConnection) EnableAcl(username string, password string) error {
-	_, err := this.client.EnableAcl(this.ctx, &pb.EnableAclRequest{
+	_, err := this.client.EnableAcl(this.ctx, &api.EnableAclRequest{
 		Username: username,
 		Password: password,
 	})
@@ -22,15 +24,15 @@ func (this *grpcConnection) EnableAcl(username string, password string) error {
 }
 
 func (this *grpcConnection) CreateUser(username string, password string) error {
-	_, err := this.client.CreateUser(this.ctx, &pb.CreateUserRequest{
+	_, err := this.client.CreateUser(this.ctx, &api.CreateUserRequest{
 		Username: username,
 		Password: password,
 	})
 	return err
 }
 
-func (this *grpcConnection) CreateCollection(name string) (Collection, error) {
-	r, err := this.client.CreateCollection(this.ctx, &pb.CreateCollectionRequest{
+func (this *grpcConnection) CreateDatabase(name string) (DB, error) {
+	_, err := this.client.CreateDatabase(this.ctx, &api.CreateDatabaseRequest{
 		Name: name,
 	})
 
@@ -39,15 +41,14 @@ func (this *grpcConnection) CreateCollection(name string) (Collection, error) {
 	}
 
 	return &collectionScope{
-		client:         this.client,
-		collectionId:   r.CollectionId,
-		collectionName: name,
-		ctx:            this.ctx,
+		client: this.client,
+		db:     name,
+		ctx:    this.ctx,
 	}, nil
 }
-func (this *grpcConnection) GrandUserToCollection(username string, collection string) error {
-	_, err := this.client.GrandUserToCollection(this.ctx, &pb.GrandUserToCollectionRequest{
-		Username:   username,
-		Collection: collection})
+func (this *grpcConnection) GrandUserToDatabase(username string, database string) error {
+	_, err := this.client.GrandUserToDatabase(this.ctx, &api.GrandUserToDatabaseRequest{
+		Username: username,
+		Database: database})
 	return err
 }

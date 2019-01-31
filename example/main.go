@@ -12,13 +12,8 @@ import (
 func main() {
 	// create streamsdb connection
 	conn := sdb.MustOpen("sdb://sdb03.streamsdb.io:443?tls=1")
+	db := conn.DB("example")
 	defer conn.Close()
-
-	// open the example database
-	db, err := conn.Collection("example")
-	if err != nil {
-		log.Fatalf("failed to open db: %s", err)
-	}
 
 	// create a channel to get notified from any errors
 	errs := make(chan error)

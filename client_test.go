@@ -12,8 +12,7 @@ func TestAppendAndReadRoundtrip(t *testing.T) {
 	conn := sdb.MustOpenDefault()
 	defer conn.Close()
 
-	col, err := conn.Collection("sdb-test")
-	assert.NoError(t, err)
+	db := conn.DB("sdb-test")
 
 	sid := "stream-id"
 	messages := []sdb.MessageInput{
@@ -23,10 +22,10 @@ func TestAppendAndReadRoundtrip(t *testing.T) {
 	}
 
 	// stream creation
-	pos, err := col.Append(sid, messages...)
+	pos, err := db.Append(sid, messages...)
 	assert.NoError(t, err)
 
-	slice, err := col.Read(sid, pos, 10)
+	slice, err := db.Read(sid, pos, 10)
 	assert.NoError(t, err)
 
 	assert.Equal(t, sid, slice.Stream)
@@ -42,8 +41,7 @@ func TestReadStream(t *testing.T) {
 	conn := sdb.MustOpenDefault()
 	defer conn.Close()
 
-	col, err := conn.Collection("sdb-test")
-	assert.NoError(t, err)
+	db := conn.DB("sdb-test")
 
 	stream := t.Name() + "-stream"
 	messages := make([]sdb.MessageInput, 10, 10)
@@ -53,11 +51,11 @@ func TestReadStream(t *testing.T) {
 		}
 	}
 
-	_, err = col.Append(stream, messages...)
+	_, err := db.Append(stream, messages...)
 	assert.NoError(t, err)
 
 	t.Run("read from end", func(t *testing.T) {
-		slice, err := col.Read(stream, -3, 3)
+		slice, err := db.Read(stream, -3, 3)
 		assert.NoError(t, err)
 
 		assert.Equal(t, sdb.Slice{
