@@ -31,25 +31,35 @@ type MessageInput struct {
 	Value []byte
 }
 
+// Watch follows a remote stream. Use the Slices channel to receive
+// slices containing the messages from the remote stream.
+// The Slices channel will be closed if an error occurs or if the watch
+// was closed.
 type Watch struct {
 	cancel context.CancelFunc
 	Slices <-chan Slice
 	err    error
 }
 
-func (this Watch) Err() error {
+// Err returns the reason why Slices was closed, if so.
+// If Slices is not closed, Err returns nil.
+// If this watch is canceled, Err returns nil.
+func (this *Watch) Err() error {
 	return this.err
 }
 
-func (this Watch) Close() {
+// Cancel cancels this watch. The Slices channel will be closed
+// and Err() will return nil.
+//
+// Calling Cancel on an cancelled or errored watch will do nothing.
+func (this *Watch) Cancel() {
 	this.cancel()
 }
 
 type Collection interface {
-	Append(stream string, messages []MessageInput) (int64, error)
+	Append(stream string, messages ...MessageInput) (int64, error)
 	Watch(stream string, from int64, count int) *Watch
 	Read(stream string, from int64, count int) (Slice, error)
-	ReadControl(stream string, from int64, count int) (Slice, error)
 }
 
 type Connection interface {
@@ -177,7 +187,7 @@ func Open(cs string) (Connection, error) {
 	return grpcConn, nil
 }
 
-func (this *collectionScope) Append(stream string, messages []MessageInput) (int64, error) {
+func (this *collectionScope) Append(stream string, messages ...MessageInput) (int64, error) {
 	inputs := make([]*pb.MessageInput, len(messages), len(messages))
 
 	for i, m := range messages {
@@ -286,7 +296,7 @@ func (this *collectionScope) Read(stream string, from int64, count int) (Slice, 
 func (this *collectionScope) Watch(stream string, from int64, count int) *Watch {
 	ctx, cancel := context.WithCancel(this.ctx)
 	slices := make(chan Slice)
-	result := Watch{cancel, slices, nil}
+	result := &Watch{cancel, slices, nil}
 
 	go func() {
 		defer close(slices)
@@ -294,6 +304,7 @@ func (this *collectionScope) Watch(stream string, from int64, count int) *Watch 
 
 		watch, err := this.client.Watch(ctx, &pb.ReadRequest{CollectionId: this.collectionId, Stream: stream, From: from, Count: uint32(count)})
 		if err != nil {
+			result.err = err
 			return
 		}
 
@@ -305,7 +316,6 @@ func (this *collectionScope) Watch(stream string, from int64, count int) *Watch 
 			}
 
 			messages := make([]Message, len(slice.Messages))
-
 			for i, m := range slice.Messages {
 				timestamp, _ := types.TimestampFromProto(m.Timestamp)
 
@@ -313,8 +323,8 @@ func (this *collectionScope) Watch(stream string, from int64, count int) *Watch 
 					Type:      m.Type,
 					Timestamp: timestamp,
 					Header:    m.Metadata,
-					Value:     m.Value}
-
+					Value:     m.Value,
+				}
 			}
 
 			s := Slice{
@@ -326,15 +336,17 @@ func (this *collectionScope) Watch(stream string, from int64, count int) *Watch 
 				Head:     slice.Head,
 				Messages: messages,
 			}
+
 			select {
 			case slices <- s:
 			case <-ctx.Done():
+				result.err = ctx.Err()
 				return
 			}
 		}
 	}()
 
-	return &result
+	return result
 }
 
 func (this *grpcConnection) Close() error {

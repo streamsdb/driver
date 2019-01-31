@@ -23,7 +23,7 @@ func TestAppendAndReadRoundtrip(t *testing.T) {
 	}
 
 	// stream creation
-	pos, err := col.Append(sid, messages)
+	pos, err := col.Append(sid, messages...)
 	assert.NoError(t, err)
 
 	slice, err := col.Read(sid, pos, 10)
@@ -53,7 +53,7 @@ func TestReadStream(t *testing.T) {
 		}
 	}
 
-	_, err = col.Append(stream, messages)
+	_, err = col.Append(stream, messages...)
 	assert.NoError(t, err)
 
 	t.Run("read from end", func(t *testing.T) {
