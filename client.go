@@ -72,8 +72,20 @@ type Connection interface {
 	// the client, passing an empty name (""), will returns
 	// a handle to that collection.
 	DB(name string) DB
+
+	// Databases lists all available databases.
+	Databases() ([]string, error)
 	Close() error
 	System() System
+}
+
+func (this *grpcConnection) Databases() ([]string, error) {
+	r, err := this.client.GetDatabases(this.ctx, &api.GetDatabasesRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Databases, nil
 }
 
 // IsTokenSet determines whether a token is set of this connection or not.
