@@ -174,7 +174,7 @@ func Open(cs string) (Connection, error) {
 	}
 
 	if dt := u.Query().Get("dt"); len(dt) > 0 {
-		d, err := time.ParseDuration("dt")
+		d, err := time.ParseDuration(dt)
 		if err != nil {
 			return nil, errors.Wrap(err, "invalid value for connection string option 'dt'")
 		}
