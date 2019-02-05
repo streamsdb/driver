@@ -168,6 +168,19 @@ func Open(cs string) (Connection, error) {
 	}
 
 	opts := make([]grpc.DialOption, 0)
+
+	if u.Query().Get("block") == "1" {
+		opts = append(opts, grpc.WithBlock())
+	}
+
+	if dt := u.Query().Get("dt"); len(dt) > 0 {
+		d, err := time.ParseDuration("dt")
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid value for connection string option 'dt'")
+		}
+		opts = append(opts, grpc.WithTimeout(d))
+	}
+
 	if u.Query().Get("insecure") == "1" {
 		opts = append(opts, grpc.WithInsecure())
 	}
