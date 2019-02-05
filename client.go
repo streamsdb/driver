@@ -36,6 +36,10 @@ type MessageInput struct {
 // was closed.
 type Watch struct {
 	cancel context.CancelFunc
+
+	// Slices returns the available messages. Slices is closed if Cancel()
+	// is called; or when an error has accored. Use Err() to get the err
+	// if any.
 	Slices <-chan Slice
 	err    error
 }
@@ -101,7 +105,14 @@ func (this *grpcConnection) IsTokenSet() bool {
 // SetToken set a token for this connection that will be included in every
 // subsequent request.
 func (this *grpcConnection) SetToken(token string) error {
-	this.ctx = metadata.AppendToOutgoingContext(this.ctx, "token", token)
+	md, ok := metadata.FromOutgoingContext(this.ctx)
+	if !ok {
+		this.ctx = metadata.AppendToOutgoingContext(this.ctx, "token", token)
+		return nil
+	}
+
+	md.Set("token", token)
+	this.ctx = metadata.NewOutgoingContext(this.ctx, md)
 	return nil
 }
 
