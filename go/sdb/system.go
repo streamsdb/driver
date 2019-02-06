@@ -1,7 +1,7 @@
 package sdb
 
 import (
-	"github.com/streamsdb/driver/internal/api"
+	"github.com/streamsdb/driver/go/sdb/internal/api"
 )
 
 type System interface {

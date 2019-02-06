@@ -10,7 +10,7 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
-	"github.com/streamsdb/driver/internal/api"
+	"github.com/streamsdb/driver/go/sdb/internal/api"
 	"google.golang.org/grpc"
 
 	"google.golang.org/grpc/balancer/roundrobin"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	sdb "github.com/streamsdb/driver"
+	sdb "github.com/streamsdb/driver/go/sdb"
 	"github.com/stretchr/testify/assert"
 )
 
