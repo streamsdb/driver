@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp2.2</TargetFramework>
+        <LangVersion>7.1</LangVersion>
+        <AssemblyName>StreamsDB.Example</AssemblyName>
+        <RootNamespace>StreamsDB.Example</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Client\Client.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="System.Threading.Tasks, Version=4.0.10.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+        <HintPath>..\..\..\..\..\..\..\.nuget\packages\system.threading.tasks\4.0.11\ref\netstandard1.3\System.Threading.Tasks.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+</Project>
