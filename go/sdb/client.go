@@ -63,6 +63,14 @@ type DB interface {
 	Append(stream string, messages ...MessageInput) (int64, error)
 	Watch(stream string, from int64, count int) *Watch
 	Read(stream string, from int64, count int) (Slice, error)
+	WithToken(token string) DB
+}
+
+// WithToken sets the token to be used with subsequent calls
+// made with this object. It overrides any token previously set.
+func (this *collectionScope) WithToken(token string) DB {
+	this.ctx = NewContextWithToken(this.ctx, token)
+	return this
 }
 
 // NewContextWithToken creates a new context with the token attached.
