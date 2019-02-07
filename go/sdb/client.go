@@ -65,6 +65,16 @@ type DB interface {
 	Read(stream string, from int64, count int) (Slice, error)
 }
 
+// NewContextWithToken creates a new context with the token attached.
+func NewContextWithToken(ctx context.Context, token string) context.Context {
+	md, ok := metadata.FromOutgoingContext(ctx)
+	if !ok {
+		return metadata.AppendToOutgoingContext(ctx, "token", token)
+	}
+
+	return metadata.NewOutgoingContext(ctx, md)
+}
+
 type Connection interface {
 	IsTokenSet() bool
 	SetToken(token string) error
