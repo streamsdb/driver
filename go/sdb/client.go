@@ -63,16 +63,19 @@ type DB interface {
 	Append(stream string, messages ...MessageInput) (int64, error)
 	Watch(stream string, from int64, count int) *Watch
 	Read(stream string, from int64, count int) (Slice, error)
-	WithToken(token string) DB
 }
 
+// WithToken return a copy of the connection with the token included
+// in the context. Token will be used with subsequent calls
+// made with this connection. It overrides any token previously set.
 func (this *grpcConnection) WithToken(token string) Connection {
-	this.ctx = NewContextWithToken(this.ctx, token)
-	return this
+	return &grpcConnection{
+		conn:   this.conn,
+		client: this.client,
+		ctx:    NewContextWithToken(this.ctx, token),
+	}
 }
 
-// WithToken sets the token to be used with subsequent calls
-// made with this object. It overrides any token previously set.
 func (this *collectionScope) WithToken(token string) DB {
 	this.ctx = NewContextWithToken(this.ctx, token)
 	return this
