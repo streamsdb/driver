@@ -83,12 +83,7 @@ func (this *collectionScope) WithToken(token string) DB {
 
 // NewContextWithToken creates a new context with the token attached.
 func NewContextWithToken(ctx context.Context, token string) context.Context {
-	md, ok := metadata.FromOutgoingContext(ctx)
-	if !ok {
-		return metadata.AppendToOutgoingContext(ctx, "token", token)
-	}
-
-	return metadata.NewOutgoingContext(ctx, md)
+	return metadata.AppendToOutgoingContext(ctx, "token", token)
 }
 
 type Connection interface {
