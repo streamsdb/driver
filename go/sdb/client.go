@@ -66,6 +66,11 @@ type DB interface {
 	WithToken(token string) DB
 }
 
+func (this *grpcConnection) WithToken(token string) Connection {
+	this.ctx = NewContextWithToken(this.ctx, token)
+	return this
+}
+
 // WithToken sets the token to be used with subsequent calls
 // made with this object. It overrides any token previously set.
 func (this *collectionScope) WithToken(token string) DB {
@@ -99,6 +104,8 @@ type Connection interface {
 	Databases() ([]string, error)
 	Close() error
 	System() System
+
+	WithToken(token string) Connection
 }
 
 func (this *grpcConnection) Databases() ([]string, error) {
