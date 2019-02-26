@@ -60,7 +60,7 @@ func (this *Watch) Cancel() {
 }
 
 type DB interface {
-	Append(stream string, messages ...MessageInput) (int64, error)
+	Append(stream string, expectedVersion int64, messages ...MessageInput) (int64, error)
 	Watch(stream string, from int64, count int) *Watch
 	Read(stream string, from int64, count int) (Slice, error)
 }
@@ -238,7 +238,7 @@ func Open(cs string) (Connection, error) {
 	return grpcConn, nil
 }
 
-func (this *collectionScope) Append(stream string, messages ...MessageInput) (int64, error) {
+func (this *collectionScope) Append(stream string, expectedVersion int64, messages ...MessageInput) (int64, error) {
 	inputs := make([]*api.MessageInput, len(messages), len(messages))
 
 	for i, m := range messages {
@@ -246,9 +246,10 @@ func (this *collectionScope) Append(stream string, messages ...MessageInput) (in
 	}
 
 	result, err := this.client.Append(this.ctx, &api.AppendRequest{
-		Database: this.db,
-		Stream:   stream,
-		Messages: inputs,
+		Database:        this.db,
+		Stream:          stream,
+		Messages:        inputs,
+		ExpectedVersion: expectedVersion,
 	})
 
 	if err != nil {
