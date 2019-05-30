@@ -104,6 +104,15 @@ type Connection interface {
 	System() System
 
 	WithToken(token string) Connection
+
+	Ping() (time.Duration, error)
+}
+
+func (this *grpcConnection) Ping() (time.Duration, error) {
+	started := time.Now()
+	_, err := this.client.Ping(this.ctx, &api.PingRequest{})
+
+	return time.Since(started), err
 }
 
 func (this *grpcConnection) Databases() ([]string, error) {
