@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	sdb "github.com/streamsdb/driver"
+	"github.com/streamsdb/driver/go/sdb"
 )
 
 func main() {
@@ -32,8 +32,8 @@ func main() {
 
 	// watch the inputs streams for messages and print them
 	go func() {
-		watch := db.Watch("inputs", -1, 10)
-		for slice := range watch.Slices {
+		subscription := db.Subscribe("inputs", -1, 10)
+		for slice := range subscription.Slices {
 			for _, msg := range slice.Messages {
 				println("received: ", string(msg.Value))
 			}

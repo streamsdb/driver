@@ -30,11 +30,11 @@ type MessageInput struct {
 	Value []byte
 }
 
-// Watch follows a remote stream. Use the Slices channel to receive
+// Subscription follows a remote stream. Use the Slices channel to receive
 // slices containing the messages from the remote stream.
-// The Slices channel will be closed if an error occurs or if the watch
+// The Slices channel will be closed if an error occurs or if the subscription
 // was closed.
-type Watch struct {
+type Subscription struct {
 	cancel context.CancelFunc
 
 	// Slices returns the available messages. Slices is closed if Cancel()
@@ -46,22 +46,22 @@ type Watch struct {
 
 // Err returns the reason why Slices was closed, if so.
 // If Slices is not closed, Err returns nil.
-// If this watch is canceled, Err returns nil.
-func (this *Watch) Err() error {
+// If this subscription is canceled, Err returns nil.
+func (this *Subscription) Err() error {
 	return this.err
 }
 
-// Cancel cancels this watch. The Slices channel will be closed
+// Cancel cancels this subscription. The Slices channel will be closed
 // and Err() will return nil.
 //
-// Calling Cancel on an cancelled or errored watch will do nothing.
-func (this *Watch) Cancel() {
+// Calling Cancel on an cancelled or errored subscription will do nothing.
+func (this *Subscription) Cancel() {
 	this.cancel()
 }
 
 type DB interface {
 	Append(stream string, expectedVersion int64, messages ...MessageInput) (int64, error)
-	Watch(stream string, from int64, count int) *Watch
+	Subscribe(stream string, from int64, count int) *Subscription
 	Read(stream string, from int64, count int) (Slice, error)
 }
 
@@ -319,23 +319,23 @@ func (this *collectionScope) Read(stream string, from int64, count int) (Slice, 
 	}, nil
 }
 
-func (this *collectionScope) Watch(stream string, from int64, count int) *Watch {
+func (this *collectionScope) Subscribe(stream string, from int64, count int) *Subscription {
 	ctx, cancel := context.WithCancel(this.ctx)
 	slices := make(chan Slice)
-	result := &Watch{cancel, slices, nil}
+	result := &Subscription{cancel, slices, nil}
 
 	go func() {
 		defer close(slices)
 		defer cancel()
 
-		watch, err := this.client.Watch(ctx, &api.ReadRequest{Database: this.db, Stream: stream, From: from, Count: uint32(count)})
+		subscription, err := this.client.Subscribe(ctx, &api.ReadRequest{Database: this.db, Stream: stream, From: from, Count: uint32(count)})
 		if err != nil {
 			result.err = err
 			return
 		}
 
 		for {
-			slice, err := watch.Recv()
+			slice, err := subscription.Recv()
 			if err != nil {
 				result.err = err
 				return
