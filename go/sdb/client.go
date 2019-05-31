@@ -254,7 +254,7 @@ func (this *collectionScope) Append(stream string, expectedVersion int64, messag
 		inputs[i] = &api.MessageInput{Type: m.Type, Metadata: m.Headers, Value: m.Value}
 	}
 
-	result, err := this.client.Append(this.ctx, &api.AppendRequest{
+	result, err := this.client.AppendStream(this.ctx, &api.AppendStreamRequest{
 		Database:        this.db,
 		Stream:          stream,
 		Messages:        inputs,
@@ -285,7 +285,7 @@ type Slice struct {
 }
 
 func (this *collectionScope) Read(stream string, from int64, count int) (Slice, error) {
-	slice, err := this.client.Read(this.ctx, &api.ReadRequest{
+	slice, err := this.client.ReadStream(this.ctx, &api.ReadStreamRequest{
 		Database: this.db,
 		Stream:   stream,
 		From:     from,
@@ -328,7 +328,7 @@ func (this *collectionScope) Subscribe(stream string, from int64, count int) *Su
 		defer close(slices)
 		defer cancel()
 
-		subscription, err := this.client.Subscribe(ctx, &api.ReadRequest{Database: this.db, Stream: stream, From: from, Count: uint32(count)})
+		subscription, err := this.client.SubscribeStream(ctx, &api.SubscribeStreamRequest{Database: this.db, Stream: stream, From: from, Count: uint32(count)})
 		if err != nil {
 			result.err = err
 			return
