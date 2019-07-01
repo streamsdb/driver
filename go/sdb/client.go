@@ -59,10 +59,21 @@ func (this *Subscription) Cancel() {
 	this.cancel()
 }
 
+type StreamPage struct {
+	Total int
+	Names []string
+
+	HasNext   bool
+	HasBefore bool
+}
+
 type DB interface {
 	Append(stream string, expectedVersion int64, messages ...MessageInput) (int64, error)
-	Subscribe(stream string, from int64, count int) *Subscription
-	Read(stream string, from int64, count int) (Slice, error)
+	Subscribe(stream string, from int64, limit int) *Subscription
+	Read(stream string, from int64, limit int) (Slice, error)
+	ReadGlobal(from []byte, limit int) (GlobalSlice, error)
+	StreamsAfter(page *StreamPage) (StreamPage, error)
+	StreamsBefore(page *StreamPage) (StreamPage, error)
 }
 
 // WithToken return a copy of the connection with the token included
@@ -226,7 +237,6 @@ func Open(cs string) (Connection, error) {
 		opts = append(opts, grpc.WithBalancerName(roundrobin.Name))
 	}
 
-	println(u.Host)
 	conn, err := grpc.Dial(u.Host, opts...)
 	if err != nil {
 		return nil, err
@@ -284,12 +294,74 @@ type Slice struct {
 	Messages []Message
 }
 
-func (this *collectionScope) Read(stream string, from int64, count int) (Slice, error) {
+type GlobalSlice struct {
+	Database string
+	From     []byte
+	Next     []byte
+	Values   []string
+}
+
+func (this *collectionScope) ReadGlobal(from []byte, limit int) (GlobalSlice, error) {
+	reply, err := this.client.ReadGlobal(this.ctx, &api.ReadGlobalRequest{
+		Database: this.db,
+		From:     from,
+		Limit:    int32(limit),
+	})
+	if err != nil {
+		return GlobalSlice{}, err
+	}
+
+	return GlobalSlice{
+		From:   reply.From,
+		Next:   reply.Next,
+		Values: reply.Values,
+	}, nil
+}
+
+func (this *collectionScope) StreamsBefore(page *StreamPage) (StreamPage, error) {
+	var before string
+	if page != nil && len(page.Names) > 0 {
+		before = page.Names[0]
+	}
+
+	result, err := this.client.GetStreams(this.ctx, &api.GetStreamsRequest{Database: this.db, Cursor: before, Direction: api.Direction_BACKWARD})
+	if err != nil {
+		return StreamPage{}, err
+	}
+
+	return StreamPage{
+		Total:     int(result.Total),
+		Names:     result.Result,
+		HasNext:   result.HasAfter,
+		HasBefore: result.HasBefore, // TODO: fix naming
+	}, nil
+}
+
+func (this *collectionScope) StreamsAfter(page *StreamPage) (StreamPage, error) {
+	var after string
+	if page != nil && len(page.Names) > 0 {
+		after = page.Names[len(page.Names)-1]
+	}
+
+	result, err := this.client.GetStreams(this.ctx, &api.GetStreamsRequest{Database: this.db, Cursor: after, Direction: api.Direction_FORWARD})
+	if err != nil {
+		return StreamPage{}, err
+	}
+
+	return StreamPage{
+		Total:     int(result.Total),
+		Names:     result.Result,
+		HasNext:   result.HasAfter,
+		HasBefore: result.HasBefore, // TODO: fix naming
+	}, nil
+}
+
+func (this *collectionScope) Read(stream string, from int64, limit int) (Slice, error) {
 	slice, err := this.client.ReadStream(this.ctx, &api.ReadStreamRequest{
 		Database: this.db,
 		Stream:   stream,
 		From:     from,
-		Count:    uint32(count),
+		Limit:    uint32(limit),
 	})
 
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	golang_proto "github.com/golang/protobuf/proto"
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	io "io"
 	math "math"
@@ -27,6 +28,319 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
+type Direction int32
+
+const (
+	Direction_FORWARD  Direction = 0
+	Direction_BACKWARD Direction = 1
+)
+
+var Direction_name = map[int32]string{
+	0: "FORWARD",
+	1: "BACKWARD",
+}
+
+var Direction_value = map[string]int32{
+	"FORWARD":  0,
+	"BACKWARD": 1,
+}
+
+func (x Direction) String() string {
+	return proto.EnumName(Direction_name, int32(x))
+}
+
+func (Direction) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_1b40cafcd4234784, []int{0}
+}
+
+type ReadGlobalRequest struct {
+	Database string `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
+	From     []byte `protobuf:"bytes,2,opt,name=from,proto3" json:"from,omitempty"`
+	Limit    int32  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+}
+
+func (m *ReadGlobalRequest) Reset()         { *m = ReadGlobalRequest{} }
+func (m *ReadGlobalRequest) String() string { return proto.CompactTextString(m) }
+func (*ReadGlobalRequest) ProtoMessage()    {}
+func (*ReadGlobalRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1b40cafcd4234784, []int{0}
+}
+func (m *ReadGlobalRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ReadGlobalRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ReadGlobalRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ReadGlobalRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReadGlobalRequest.Merge(m, src)
+}
+func (m *ReadGlobalRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *ReadGlobalRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReadGlobalRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ReadGlobalRequest proto.InternalMessageInfo
+
+func (m *ReadGlobalRequest) GetDatabase() string {
+	if m != nil {
+		return m.Database
+	}
+	return ""
+}
+
+func (m *ReadGlobalRequest) GetFrom() []byte {
+	if m != nil {
+		return m.From
+	}
+	return nil
+}
+
+func (m *ReadGlobalRequest) GetLimit() int32 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
+
+type ReadGlobalReply struct {
+	Database string   `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
+	From     []byte   `protobuf:"bytes,2,opt,name=from,proto3" json:"from,omitempty"`
+	Next     []byte   `protobuf:"bytes,3,opt,name=next,proto3" json:"next,omitempty"`
+	Values   []string `protobuf:"bytes,4,rep,name=values,proto3" json:"values,omitempty"`
+}
+
+func (m *ReadGlobalReply) Reset()         { *m = ReadGlobalReply{} }
+func (m *ReadGlobalReply) String() string { return proto.CompactTextString(m) }
+func (*ReadGlobalReply) ProtoMessage()    {}
+func (*ReadGlobalReply) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1b40cafcd4234784, []int{1}
+}
+func (m *ReadGlobalReply) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ReadGlobalReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ReadGlobalReply.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ReadGlobalReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReadGlobalReply.Merge(m, src)
+}
+func (m *ReadGlobalReply) XXX_Size() int {
+	return m.Size()
+}
+func (m *ReadGlobalReply) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReadGlobalReply.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ReadGlobalReply proto.InternalMessageInfo
+
+func (m *ReadGlobalReply) GetDatabase() string {
+	if m != nil {
+		return m.Database
+	}
+	return ""
+}
+
+func (m *ReadGlobalReply) GetFrom() []byte {
+	if m != nil {
+		return m.From
+	}
+	return nil
+}
+
+func (m *ReadGlobalReply) GetNext() []byte {
+	if m != nil {
+		return m.Next
+	}
+	return nil
+}
+
+func (m *ReadGlobalReply) GetValues() []string {
+	if m != nil {
+		return m.Values
+	}
+	return nil
+}
+
+type GetStreamsRequest struct {
+	Database  string    `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
+	Cursor    string    `protobuf:"bytes,2,opt,name=cursor,proto3" json:"cursor,omitempty"`
+	Direction Direction `protobuf:"varint,3,opt,name=direction,proto3,enum=streamsdb.api.Direction" json:"direction,omitempty"`
+}
+
+func (m *GetStreamsRequest) Reset()         { *m = GetStreamsRequest{} }
+func (m *GetStreamsRequest) String() string { return proto.CompactTextString(m) }
+func (*GetStreamsRequest) ProtoMessage()    {}
+func (*GetStreamsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1b40cafcd4234784, []int{2}
+}
+func (m *GetStreamsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetStreamsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetStreamsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetStreamsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetStreamsRequest.Merge(m, src)
+}
+func (m *GetStreamsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetStreamsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetStreamsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetStreamsRequest proto.InternalMessageInfo
+
+func (m *GetStreamsRequest) GetDatabase() string {
+	if m != nil {
+		return m.Database
+	}
+	return ""
+}
+
+func (m *GetStreamsRequest) GetCursor() string {
+	if m != nil {
+		return m.Cursor
+	}
+	return ""
+}
+
+func (m *GetStreamsRequest) GetDirection() Direction {
+	if m != nil {
+		return m.Direction
+	}
+	return Direction_FORWARD
+}
+
+type GetStreamsReply struct {
+	Total        int64     `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
+	Cursor       string    `protobuf:"bytes,2,opt,name=cursor,proto3" json:"cursor,omitempty"`
+	Direction    Direction `protobuf:"varint,3,opt,name=direction,proto3,enum=streamsdb.api.Direction" json:"direction,omitempty"`
+	HasBefore    bool      `protobuf:"varint,4,opt,name=hasBefore,proto3" json:"hasBefore,omitempty"`
+	HasAfter     bool      `protobuf:"varint,5,opt,name=hasAfter,proto3" json:"hasAfter,omitempty"`
+	BeforeCursor string    `protobuf:"bytes,6,opt,name=beforeCursor,proto3" json:"beforeCursor,omitempty"`
+	AfterCursor  string    `protobuf:"bytes,7,opt,name=afterCursor,proto3" json:"afterCursor,omitempty"`
+	Result       []string  `protobuf:"bytes,8,rep,name=result,proto3" json:"result,omitempty"`
+}
+
+func (m *GetStreamsReply) Reset()         { *m = GetStreamsReply{} }
+func (m *GetStreamsReply) String() string { return proto.CompactTextString(m) }
+func (*GetStreamsReply) ProtoMessage()    {}
+func (*GetStreamsReply) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1b40cafcd4234784, []int{3}
+}
+func (m *GetStreamsReply) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetStreamsReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetStreamsReply.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetStreamsReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetStreamsReply.Merge(m, src)
+}
+func (m *GetStreamsReply) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetStreamsReply) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetStreamsReply.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetStreamsReply proto.InternalMessageInfo
+
+func (m *GetStreamsReply) GetTotal() int64 {
+	if m != nil {
+		return m.Total
+	}
+	return 0
+}
+
+func (m *GetStreamsReply) GetCursor() string {
+	if m != nil {
+		return m.Cursor
+	}
+	return ""
+}
+
+func (m *GetStreamsReply) GetDirection() Direction {
+	if m != nil {
+		return m.Direction
+	}
+	return Direction_FORWARD
+}
+
+func (m *GetStreamsReply) GetHasBefore() bool {
+	if m != nil {
+		return m.HasBefore
+	}
+	return false
+}
+
+func (m *GetStreamsReply) GetHasAfter() bool {
+	if m != nil {
+		return m.HasAfter
+	}
+	return false
+}
+
+func (m *GetStreamsReply) GetBeforeCursor() string {
+	if m != nil {
+		return m.BeforeCursor
+	}
+	return ""
+}
+
+func (m *GetStreamsReply) GetAfterCursor() string {
+	if m != nil {
+		return m.AfterCursor
+	}
+	return ""
+}
+
+func (m *GetStreamsReply) GetResult() []string {
+	if m != nil {
+		return m.Result
+	}
+	return nil
+}
+
 type PingRequest struct {
 }
 
@@ -34,7 +348,7 @@ func (m *PingRequest) Reset()         { *m = PingRequest{} }
 func (m *PingRequest) String() string { return proto.CompactTextString(m) }
 func (*PingRequest) ProtoMessage()    {}
 func (*PingRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{0}
+	return fileDescriptor_1b40cafcd4234784, []int{4}
 }
 func (m *PingRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -70,7 +384,7 @@ func (m *PingReply) Reset()         { *m = PingReply{} }
 func (m *PingReply) String() string { return proto.CompactTextString(m) }
 func (*PingReply) ProtoMessage()    {}
 func (*PingReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{1}
+	return fileDescriptor_1b40cafcd4234784, []int{5}
 }
 func (m *PingReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -106,7 +420,7 @@ func (m *GetDatabasesRequest) Reset()         { *m = GetDatabasesRequest{} }
 func (m *GetDatabasesRequest) String() string { return proto.CompactTextString(m) }
 func (*GetDatabasesRequest) ProtoMessage()    {}
 func (*GetDatabasesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{2}
+	return fileDescriptor_1b40cafcd4234784, []int{6}
 }
 func (m *GetDatabasesRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -143,7 +457,7 @@ func (m *GetDatabasesReply) Reset()         { *m = GetDatabasesReply{} }
 func (m *GetDatabasesReply) String() string { return proto.CompactTextString(m) }
 func (*GetDatabasesReply) ProtoMessage()    {}
 func (*GetDatabasesReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{3}
+	return fileDescriptor_1b40cafcd4234784, []int{7}
 }
 func (m *GetDatabasesReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -188,7 +502,7 @@ func (m *LoginRequest) Reset()         { *m = LoginRequest{} }
 func (m *LoginRequest) String() string { return proto.CompactTextString(m) }
 func (*LoginRequest) ProtoMessage()    {}
 func (*LoginRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{4}
+	return fileDescriptor_1b40cafcd4234784, []int{8}
 }
 func (m *LoginRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -239,7 +553,7 @@ func (m *LoginReply) Reset()         { *m = LoginReply{} }
 func (m *LoginReply) String() string { return proto.CompactTextString(m) }
 func (*LoginReply) ProtoMessage()    {}
 func (*LoginReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{5}
+	return fileDescriptor_1b40cafcd4234784, []int{9}
 }
 func (m *LoginReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -285,7 +599,7 @@ func (m *EnableAclRequest) Reset()         { *m = EnableAclRequest{} }
 func (m *EnableAclRequest) String() string { return proto.CompactTextString(m) }
 func (*EnableAclRequest) ProtoMessage()    {}
 func (*EnableAclRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{6}
+	return fileDescriptor_1b40cafcd4234784, []int{10}
 }
 func (m *EnableAclRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -343,7 +657,7 @@ func (m *GetDatabaseRequest) Reset()         { *m = GetDatabaseRequest{} }
 func (m *GetDatabaseRequest) String() string { return proto.CompactTextString(m) }
 func (*GetDatabaseRequest) ProtoMessage()    {}
 func (*GetDatabaseRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{7}
+	return fileDescriptor_1b40cafcd4234784, []int{11}
 }
 func (m *GetDatabaseRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -387,7 +701,7 @@ func (m *GetDatabaseReply) Reset()         { *m = GetDatabaseReply{} }
 func (m *GetDatabaseReply) String() string { return proto.CompactTextString(m) }
 func (*GetDatabaseReply) ProtoMessage()    {}
 func (*GetDatabaseReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{8}
+	return fileDescriptor_1b40cafcd4234784, []int{12}
 }
 func (m *GetDatabaseReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -430,7 +744,7 @@ func (m *EnableAclReply) Reset()         { *m = EnableAclReply{} }
 func (m *EnableAclReply) String() string { return proto.CompactTextString(m) }
 func (*EnableAclReply) ProtoMessage()    {}
 func (*EnableAclReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{9}
+	return fileDescriptor_1b40cafcd4234784, []int{13}
 }
 func (m *EnableAclReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -468,7 +782,7 @@ func (m *GrandUserToDatabaseRequest) Reset()         { *m = GrandUserToDatabaseR
 func (m *GrandUserToDatabaseRequest) String() string { return proto.CompactTextString(m) }
 func (*GrandUserToDatabaseRequest) ProtoMessage()    {}
 func (*GrandUserToDatabaseRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{10}
+	return fileDescriptor_1b40cafcd4234784, []int{14}
 }
 func (m *GrandUserToDatabaseRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -518,7 +832,7 @@ func (m *GrandUserToDatabaseReply) Reset()         { *m = GrandUserToDatabaseRep
 func (m *GrandUserToDatabaseReply) String() string { return proto.CompactTextString(m) }
 func (*GrandUserToDatabaseReply) ProtoMessage()    {}
 func (*GrandUserToDatabaseReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{11}
+	return fileDescriptor_1b40cafcd4234784, []int{15}
 }
 func (m *GrandUserToDatabaseReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -556,7 +870,7 @@ func (m *CreateUserRequest) Reset()         { *m = CreateUserRequest{} }
 func (m *CreateUserRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateUserRequest) ProtoMessage()    {}
 func (*CreateUserRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{12}
+	return fileDescriptor_1b40cafcd4234784, []int{16}
 }
 func (m *CreateUserRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -606,7 +920,7 @@ func (m *CreateUserReply) Reset()         { *m = CreateUserReply{} }
 func (m *CreateUserReply) String() string { return proto.CompactTextString(m) }
 func (*CreateUserReply) ProtoMessage()    {}
 func (*CreateUserReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{13}
+	return fileDescriptor_1b40cafcd4234784, []int{17}
 }
 func (m *CreateUserReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -643,7 +957,7 @@ func (m *CreateDatabaseRequest) Reset()         { *m = CreateDatabaseRequest{} }
 func (m *CreateDatabaseRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateDatabaseRequest) ProtoMessage()    {}
 func (*CreateDatabaseRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{14}
+	return fileDescriptor_1b40cafcd4234784, []int{18}
 }
 func (m *CreateDatabaseRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -686,7 +1000,7 @@ func (m *CreateDatabaseReply) Reset()         { *m = CreateDatabaseReply{} }
 func (m *CreateDatabaseReply) String() string { return proto.CompactTextString(m) }
 func (*CreateDatabaseReply) ProtoMessage()    {}
 func (*CreateDatabaseReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{15}
+	return fileDescriptor_1b40cafcd4234784, []int{19}
 }
 func (m *CreateDatabaseReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -726,7 +1040,7 @@ func (m *SubscribeStreamRequest) Reset()         { *m = SubscribeStreamRequest{}
 func (m *SubscribeStreamRequest) String() string { return proto.CompactTextString(m) }
 func (*SubscribeStreamRequest) ProtoMessage()    {}
 func (*SubscribeStreamRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{16}
+	return fileDescriptor_1b40cafcd4234784, []int{20}
 }
 func (m *SubscribeStreamRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -788,14 +1102,14 @@ type ReadStreamRequest struct {
 	Database string `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
 	Stream   string `protobuf:"bytes,2,opt,name=stream,proto3" json:"stream,omitempty"`
 	From     int64  `protobuf:"varint,3,opt,name=from,proto3" json:"from,omitempty"`
-	Count    uint32 `protobuf:"varint,4,opt,name=count,proto3" json:"count,omitempty"`
+	Limit    uint32 `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
 }
 
 func (m *ReadStreamRequest) Reset()         { *m = ReadStreamRequest{} }
 func (m *ReadStreamRequest) String() string { return proto.CompactTextString(m) }
 func (*ReadStreamRequest) ProtoMessage()    {}
 func (*ReadStreamRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{17}
+	return fileDescriptor_1b40cafcd4234784, []int{21}
 }
 func (m *ReadStreamRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -845,25 +1159,26 @@ func (m *ReadStreamRequest) GetFrom() int64 {
 	return 0
 }
 
-func (m *ReadStreamRequest) GetCount() uint32 {
+func (m *ReadStreamRequest) GetLimit() uint32 {
 	if m != nil {
-		return m.Count
+		return m.Limit
 	}
 	return 0
 }
 
 type Message struct {
-	Type      string           `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	Timestamp *types.Timestamp `protobuf:"bytes,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Metadata  []byte           `protobuf:"bytes,3,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	Value     []byte           `protobuf:"bytes,4,opt,name=value,proto3" json:"value,omitempty"`
+	Position  int64            `protobuf:"varint,1,opt,name=position,proto3" json:"position,omitempty"`
+	Type      string           `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	Timestamp *types.Timestamp `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Metadata  []byte           `protobuf:"bytes,4,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Value     []byte           `protobuf:"bytes,5,opt,name=value,proto3" json:"value,omitempty"`
 }
 
 func (m *Message) Reset()         { *m = Message{} }
 func (m *Message) String() string { return proto.CompactTextString(m) }
 func (*Message) ProtoMessage()    {}
 func (*Message) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{18}
+	return fileDescriptor_1b40cafcd4234784, []int{22}
 }
 func (m *Message) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -891,6 +1206,13 @@ func (m *Message) XXX_DiscardUnknown() {
 }
 
 var xxx_messageInfo_Message proto.InternalMessageInfo
+
+func (m *Message) GetPosition() int64 {
+	if m != nil {
+		return m.Position
+	}
+	return 0
+}
 
 func (m *Message) GetType() string {
 	if m != nil {
@@ -935,7 +1257,7 @@ func (m *Slice) Reset()         { *m = Slice{} }
 func (m *Slice) String() string { return proto.CompactTextString(m) }
 func (*Slice) ProtoMessage()    {}
 func (*Slice) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{19}
+	return fileDescriptor_1b40cafcd4234784, []int{23}
 }
 func (m *Slice) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1030,7 +1352,7 @@ func (m *MessageInput) Reset()         { *m = MessageInput{} }
 func (m *MessageInput) String() string { return proto.CompactTextString(m) }
 func (*MessageInput) ProtoMessage()    {}
 func (*MessageInput) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{20}
+	return fileDescriptor_1b40cafcd4234784, []int{24}
 }
 func (m *MessageInput) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1091,7 +1413,7 @@ func (m *AppendStreamRequest) Reset()         { *m = AppendStreamRequest{} }
 func (m *AppendStreamRequest) String() string { return proto.CompactTextString(m) }
 func (*AppendStreamRequest) ProtoMessage()    {}
 func (*AppendStreamRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{21}
+	return fileDescriptor_1b40cafcd4234784, []int{25}
 }
 func (m *AppendStreamRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1156,7 +1478,7 @@ func (m *AppendStreamReply) Reset()         { *m = AppendStreamReply{} }
 func (m *AppendStreamReply) String() string { return proto.CompactTextString(m) }
 func (*AppendStreamReply) ProtoMessage()    {}
 func (*AppendStreamReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1b40cafcd4234784, []int{22}
+	return fileDescriptor_1b40cafcd4234784, []int{26}
 }
 func (m *AppendStreamReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1193,6 +1515,16 @@ func (m *AppendStreamReply) GetFrom() int64 {
 }
 
 func init() {
+	proto.RegisterEnum("streamsdb.api.Direction", Direction_name, Direction_value)
+	golang_proto.RegisterEnum("streamsdb.api.Direction", Direction_name, Direction_value)
+	proto.RegisterType((*ReadGlobalRequest)(nil), "streamsdb.api.ReadGlobalRequest")
+	golang_proto.RegisterType((*ReadGlobalRequest)(nil), "streamsdb.api.ReadGlobalRequest")
+	proto.RegisterType((*ReadGlobalReply)(nil), "streamsdb.api.ReadGlobalReply")
+	golang_proto.RegisterType((*ReadGlobalReply)(nil), "streamsdb.api.ReadGlobalReply")
+	proto.RegisterType((*GetStreamsRequest)(nil), "streamsdb.api.GetStreamsRequest")
+	golang_proto.RegisterType((*GetStreamsRequest)(nil), "streamsdb.api.GetStreamsRequest")
+	proto.RegisterType((*GetStreamsReply)(nil), "streamsdb.api.GetStreamsReply")
+	golang_proto.RegisterType((*GetStreamsReply)(nil), "streamsdb.api.GetStreamsReply")
 	proto.RegisterType((*PingRequest)(nil), "streamsdb.api.PingRequest")
 	golang_proto.RegisterType((*PingRequest)(nil), "streamsdb.api.PingRequest")
 	proto.RegisterType((*PingReply)(nil), "streamsdb.api.PingReply")
@@ -1245,64 +1577,85 @@ func init() { proto.RegisterFile("api/api.proto", fileDescriptor_1b40cafcd423478
 func init() { golang_proto.RegisterFile("api/api.proto", fileDescriptor_1b40cafcd4234784) }
 
 var fileDescriptor_1b40cafcd4234784 = []byte{
-	// 909 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x56, 0x4f, 0x8f, 0xdb, 0x44,
-	0x14, 0xcf, 0x24, 0x9b, 0xcd, 0xe6, 0x25, 0xfb, 0x27, 0xb3, 0xdd, 0x95, 0x31, 0xe0, 0x86, 0x11,
-	0xd0, 0x20, 0x54, 0x2f, 0x2c, 0x07, 0x38, 0x81, 0xca, 0x9f, 0x56, 0x08, 0x8a, 0x8a, 0x37, 0xf4,
-	0x80, 0xb8, 0x8c, 0x93, 0xa9, 0xd7, 0x6a, 0xe2, 0x71, 0x3d, 0xe3, 0xd2, 0xbd, 0x71, 0xe5, 0x86,
-	0xc4, 0xd7, 0xe0, 0x43, 0x70, 0xec, 0x8d, 0x1e, 0x39, 0xa2, 0xcd, 0x97, 0xe0, 0x88, 0x66, 0xc6,
-	0x8e, 0x1d, 0xc7, 0xd9, 0x56, 0x2a, 0xea, 0x6d, 0xde, 0xf3, 0x6f, 0xde, 0xfb, 0xfd, 0xde, 0xcc,
-	0xbc, 0x67, 0xd8, 0xa5, 0x71, 0x78, 0x42, 0xe3, 0xd0, 0x8d, 0x13, 0x2e, 0x39, 0xde, 0x15, 0x32,
-	0x61, 0x74, 0x2e, 0xa6, 0xbe, 0x4b, 0xe3, 0xd0, 0xbe, 0x19, 0x84, 0xf2, 0x3c, 0xf5, 0xdd, 0x09,
-	0x9f, 0x9f, 0x04, 0x3c, 0xe0, 0x27, 0x1a, 0xe5, 0xa7, 0x0f, 0xb4, 0xa5, 0x0d, 0xbd, 0x32, 0xbb,
-	0xed, 0xeb, 0x01, 0xe7, 0xc1, 0x8c, 0x15, 0x28, 0x19, 0xce, 0x99, 0x90, 0x74, 0x1e, 0x1b, 0x00,
-	0xd9, 0x85, 0xde, 0xbd, 0x30, 0x0a, 0x3c, 0xf6, 0x28, 0x65, 0x42, 0x92, 0x1e, 0x74, 0x8d, 0x19,
-	0xcf, 0x2e, 0xc8, 0x11, 0x1c, 0xde, 0x61, 0xf2, 0x4b, 0x2a, 0xa9, 0x4f, 0x05, 0x13, 0x39, 0xe6,
-	0x43, 0x18, 0xac, 0xba, 0xe3, 0xd9, 0x05, 0x7e, 0x03, 0xba, 0xd3, 0xdc, 0x63, 0xa1, 0x61, 0x6b,
-	0xd4, 0xf5, 0x0a, 0x07, 0xb9, 0x0d, 0xfd, 0x6f, 0x79, 0x10, 0x46, 0x59, 0x08, 0x6c, 0xc3, 0x4e,
-	0x2a, 0x58, 0x12, 0xd1, 0x39, 0xb3, 0xd0, 0x10, 0x8d, 0xba, 0xde, 0xd2, 0x56, 0xdf, 0x62, 0x2a,
-	0xc4, 0xcf, 0x3c, 0x99, 0x5a, 0x4d, 0xf3, 0x2d, 0xb7, 0x09, 0x01, 0xc8, 0xe2, 0xa8, 0x9c, 0xd7,
-	0xa0, 0x2d, 0xf9, 0x43, 0x16, 0x65, 0x21, 0x8c, 0x41, 0xce, 0xe1, 0xe0, 0xab, 0x88, 0xfa, 0x33,
-	0x76, 0x6b, 0x32, 0x7b, 0xc9, 0x7c, 0x4a, 0x95, 0x08, 0x83, 0x88, 0xca, 0x34, 0x61, 0x56, 0x6b,
-	0x88, 0x46, 0x7d, 0xaf, 0x70, 0x90, 0x11, 0xe0, 0x52, 0x21, 0xf2, 0x5c, 0x18, 0xb6, 0x4a, 0x79,
-	0xf4, 0x9a, 0xbc, 0x0b, 0x07, 0x2b, 0x48, 0xc5, 0xbe, 0x0e, 0x77, 0x00, 0x7b, 0x25, 0xee, 0xea,
-	0x0c, 0xc6, 0x60, 0xdf, 0x49, 0x68, 0x34, 0xfd, 0x41, 0xb0, 0x64, 0xcc, 0xab, 0xb9, 0x9e, 0xa3,
-	0x2b, 0x3f, 0x80, 0x5c, 0x57, 0x6e, 0x13, 0x1b, 0xac, 0xda, 0xa8, 0x2a, 0xe3, 0x37, 0x30, 0xf8,
-	0x22, 0x61, 0x54, 0x32, 0xf5, 0xf1, 0x65, 0x0f, 0x6c, 0x00, 0xfb, 0xe5, 0x60, 0x2a, 0xfe, 0xfb,
-	0x70, 0x64, 0x5c, 0x2f, 0x52, 0xb8, 0x23, 0x38, 0xac, 0x82, 0x55, 0x8c, 0xc7, 0x70, 0x7c, 0x96,
-	0xfa, 0x62, 0x92, 0x84, 0x3e, 0x3b, 0xd3, 0xef, 0xa3, 0x44, 0x74, 0xa9, 0x1a, 0xad, 0xaa, 0xc6,
-	0xc7, 0xb0, 0x6d, 0x1e, 0x53, 0x46, 0x33, 0xb3, 0x54, 0xe2, 0x07, 0x09, 0x9f, 0xeb, 0x03, 0x6e,
-	0x79, 0x7a, 0xad, 0xee, 0xd6, 0x84, 0xa7, 0x91, 0xb4, 0xb6, 0x86, 0x68, 0xb4, 0xeb, 0x19, 0x83,
-	0x3c, 0x82, 0x81, 0xc7, 0xe8, 0xf4, 0x55, 0xa6, 0xfc, 0x15, 0x41, 0xe7, 0x2e, 0x13, 0x82, 0x06,
-	0x4c, 0xed, 0x92, 0x17, 0xf1, 0xb2, 0x42, 0x6a, 0x8d, 0x3f, 0x81, 0xee, 0xf2, 0x4d, 0xeb, 0x24,
-	0xbd, 0x53, 0xdb, 0x35, 0xaf, 0xde, 0xcd, 0x5f, 0xbd, 0x3b, 0xce, 0x11, 0x5e, 0x01, 0x56, 0xbc,
-	0xe7, 0x4c, 0x52, 0xc5, 0x35, 0xbb, 0xdb, 0x4b, 0x5b, 0x71, 0x79, 0x4c, 0x67, 0x29, 0xd3, 0x5c,
-	0xfa, 0x9e, 0x31, 0xc8, 0x5f, 0x08, 0xda, 0x67, 0xb3, 0x70, 0x52, 0xd6, 0x85, 0x6a, 0x75, 0x35,
-	0x4b, 0xba, 0xf6, 0xa0, 0x29, 0x79, 0xa6, 0xb4, 0x29, 0xf9, 0xaa, 0xce, 0x76, 0xa6, 0x53, 0x9f,
-	0x3e, 0x7b, 0x22, 0xad, 0xb6, 0xd9, 0xa9, 0xd6, 0xd8, 0x82, 0xce, 0x39, 0x15, 0xdf, 0x29, 0xf7,
-	0xf6, 0x10, 0x8d, 0x76, 0xbc, 0xdc, 0x54, 0xe8, 0x73, 0x46, 0xa7, 0x56, 0xc7, 0xa0, 0xd5, 0x1a,
-	0x9f, 0x2a, 0x3d, 0xba, 0x50, 0xc2, 0xda, 0x19, 0xb6, 0x46, 0xbd, 0xd3, 0x63, 0x77, 0xa5, 0x79,
-	0xba, 0x59, 0x1d, 0xbd, 0x25, 0x8e, 0x8c, 0xa1, 0x9f, 0x39, 0xbf, 0x8e, 0xe2, 0x54, 0xd6, 0x56,
-	0xb8, 0x5c, 0xa7, 0xe6, 0xa6, 0x3a, 0xb5, 0xca, 0x75, 0xfa, 0x03, 0xc1, 0xe1, 0xad, 0x38, 0x66,
-	0xd1, 0xff, 0x70, 0x53, 0x3e, 0x2e, 0xa9, 0x6a, 0x69, 0x55, 0xaf, 0xd7, 0xab, 0xd2, 0x02, 0x0a,
-	0x69, 0x78, 0x04, 0xfb, 0xec, 0x49, 0xcc, 0x26, 0x92, 0x4d, 0xef, 0xb3, 0x44, 0x84, 0x3c, 0xd2,
-	0x05, 0x6f, 0x79, 0x55, 0x37, 0xb9, 0x01, 0x83, 0x55, 0xb6, 0x59, 0x7b, 0xd2, 0x27, 0x89, 0x8a,
-	0x93, 0x3c, 0xfd, 0xbd, 0x03, 0x1d, 0x83, 0x11, 0x78, 0x0c, 0xfd, 0xf2, 0x14, 0xc0, 0xa4, 0xc2,
-	0xaa, 0x66, 0x72, 0xd8, 0xc3, 0x2b, 0x31, 0x2a, 0xeb, 0xf7, 0xd0, 0x2b, 0x39, 0xf1, 0x5b, 0x9b,
-	0x37, 0xe4, 0x31, 0xaf, 0x5f, 0x05, 0x51, 0x21, 0x3f, 0x83, 0xb6, 0x9e, 0x19, 0xb8, 0x5a, 0xb7,
-	0xf2, 0x44, 0xb2, 0x5f, 0xab, 0xff, 0xa8, 0x02, 0xdc, 0x85, 0xee, 0xb2, 0x29, 0xe3, 0x6a, 0xba,
-	0xea, 0xa8, 0xb1, 0xdf, 0xdc, 0x0c, 0x50, 0x9d, 0xab, 0x81, 0x1f, 0xc2, 0x61, 0x4d, 0xef, 0xc5,
-	0xef, 0x55, 0x75, 0x6c, 0xec, 0xfa, 0xf6, 0x8d, 0x17, 0x81, 0x9a, 0x64, 0xf7, 0x00, 0x8a, 0xfe,
-	0x8b, 0xab, 0xf5, 0x5f, 0xeb, 0xf3, 0xb6, 0x73, 0x05, 0xc2, 0x44, 0xfc, 0x09, 0xf6, 0x56, 0x3b,
-	0x32, 0x7e, 0xbb, 0x76, 0x4f, 0x95, 0x34, 0x79, 0x0e, 0xca, 0x44, 0xbf, 0x0d, 0x50, 0x34, 0xd8,
-	0x35, 0xbe, 0x6b, 0xbd, 0xd7, 0xbe, 0x56, 0x41, 0xe8, 0xee, 0x44, 0x1a, 0xf8, 0x3e, 0xf4, 0xcb,
-	0x57, 0x7a, 0xed, 0x76, 0xd6, 0xbc, 0xce, 0xb5, 0xdb, 0xb9, 0xf6, 0x26, 0x48, 0x03, 0x7b, 0xb0,
-	0x5f, 0x19, 0x3c, 0xf8, 0x9d, 0x2a, 0x85, 0xda, 0xc1, 0xb4, 0x89, 0xe9, 0x07, 0x08, 0x7f, 0x0a,
-	0x5b, 0xea, 0x9f, 0x0b, 0xdb, 0x15, 0x44, 0xe9, 0xbf, 0xcc, 0xb6, 0x6a, 0xbf, 0x69, 0x4e, 0x9f,
-	0xdf, 0x7c, 0x7a, 0xe9, 0xa0, 0x67, 0x97, 0x0e, 0xfa, 0xe7, 0xd2, 0x41, 0xff, 0x5e, 0x3a, 0xe8,
-	0x97, 0x85, 0x83, 0x7e, 0x5b, 0x38, 0x8d, 0x3f, 0x17, 0x0e, 0x7a, 0xba, 0x70, 0x1a, 0xcf, 0x16,
-	0x4e, 0xe3, 0xef, 0x85, 0xd3, 0xf8, 0xb1, 0x45, 0xe3, 0xd0, 0xdf, 0xd6, 0x53, 0xe1, 0xa3, 0xff,
-	0x02, 0x00, 0x00, 0xff, 0xff, 0x17, 0x17, 0x88, 0x0c, 0x68, 0x0a, 0x00, 0x00,
+	// 1237 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x57, 0x5b, 0x6f, 0x1b, 0x45,
+	0x14, 0xf6, 0xfa, 0x92, 0xc4, 0xc7, 0x4e, 0x9c, 0x4c, 0x2e, 0x5a, 0x96, 0xe0, 0x9a, 0x11, 0xb4,
+	0x06, 0x54, 0x9b, 0x06, 0x09, 0x78, 0x43, 0xb9, 0x90, 0x08, 0x95, 0x96, 0x6a, 0x13, 0x8a, 0x40,
+	0xbc, 0x8c, 0xed, 0x89, 0xbd, 0xca, 0x7a, 0x77, 0xbb, 0x33, 0x1b, 0x12, 0xa1, 0x0a, 0xc4, 0x1f,
+	0x00, 0x89, 0xbf, 0x00, 0x6f, 0xfc, 0x08, 0x1e, 0xfb, 0x46, 0x25, 0x5e, 0x78, 0x44, 0x31, 0x3f,
+	0x82, 0x47, 0x34, 0x33, 0x7b, 0xf3, 0x7a, 0x93, 0x06, 0xb5, 0x7d, 0x9b, 0x73, 0xe6, 0xdb, 0x73,
+	0xdd, 0xf3, 0x9d, 0x5d, 0x58, 0x24, 0x9e, 0xd5, 0x25, 0x9e, 0xd5, 0xf1, 0x7c, 0x97, 0xbb, 0x68,
+	0x91, 0x71, 0x9f, 0x92, 0x31, 0x1b, 0xf4, 0x3a, 0xc4, 0xb3, 0x8c, 0xdb, 0x43, 0x8b, 0x8f, 0x82,
+	0x5e, 0xa7, 0xef, 0x8e, 0xbb, 0x43, 0x77, 0xe8, 0x76, 0x25, 0xaa, 0x17, 0x1c, 0x4b, 0x49, 0x0a,
+	0xf2, 0xa4, 0x9e, 0x36, 0x6e, 0x0c, 0x5d, 0x77, 0x68, 0xd3, 0x04, 0xc5, 0xad, 0x31, 0x65, 0x9c,
+	0x8c, 0xbd, 0x10, 0xb0, 0x19, 0x02, 0xa4, 0x53, 0xc7, 0x71, 0x39, 0xe1, 0x96, 0xeb, 0x30, 0x75,
+	0x8b, 0xbf, 0x84, 0x15, 0x93, 0x92, 0xc1, 0x81, 0xed, 0xf6, 0x88, 0x6d, 0xd2, 0x47, 0x01, 0x65,
+	0x1c, 0x19, 0xb0, 0x30, 0x20, 0x9c, 0xf4, 0x08, 0xa3, 0xba, 0xd6, 0xd2, 0xda, 0x55, 0x33, 0x96,
+	0x11, 0x82, 0xf2, 0xb1, 0xef, 0x8e, 0xf5, 0x62, 0x4b, 0x6b, 0xd7, 0x4d, 0x79, 0x46, 0x6b, 0x50,
+	0xb1, 0xad, 0xb1, 0xc5, 0xf5, 0x52, 0x4b, 0x6b, 0x57, 0x4c, 0x25, 0xe0, 0x31, 0x34, 0xd2, 0xa6,
+	0x3d, 0xfb, 0xfc, 0x7f, 0x1b, 0x46, 0x50, 0x76, 0xe8, 0x99, 0xb2, 0x5b, 0x37, 0xe5, 0x19, 0x6d,
+	0xc0, 0xdc, 0x29, 0xb1, 0x03, 0xca, 0xf4, 0x72, 0xab, 0xd4, 0xae, 0x9a, 0xa1, 0x84, 0xbf, 0x83,
+	0x95, 0x03, 0xca, 0x0f, 0x55, 0x2d, 0xaf, 0x93, 0xc9, 0x06, 0xcc, 0xf5, 0x03, 0x9f, 0xb9, 0xbe,
+	0x74, 0x59, 0x35, 0x43, 0x09, 0xbd, 0x0f, 0xd5, 0x81, 0xe5, 0xd3, 0xbe, 0x28, 0x93, 0xf4, 0xbc,
+	0xb4, 0xa5, 0x77, 0xa6, 0x7a, 0xd4, 0xd9, 0x8b, 0xee, 0xcd, 0x04, 0x8a, 0x7f, 0x2c, 0x42, 0x23,
+	0x1d, 0x81, 0x48, 0x78, 0x0d, 0x2a, 0xdc, 0xe5, 0xc4, 0x96, 0xce, 0x4b, 0xa6, 0x12, 0x5e, 0xb4,
+	0x67, 0xb4, 0x09, 0xd5, 0x11, 0x61, 0x3b, 0xf4, 0xd8, 0xf5, 0xa9, 0x5e, 0x6e, 0x69, 0xed, 0x05,
+	0x33, 0x51, 0x88, 0x1a, 0x8c, 0x08, 0xdb, 0x3e, 0xe6, 0xd4, 0xd7, 0x2b, 0xf2, 0x32, 0x96, 0x11,
+	0x86, 0x7a, 0x4f, 0xa2, 0x76, 0x55, 0x3c, 0x73, 0x32, 0x9e, 0x29, 0x1d, 0x6a, 0x41, 0x8d, 0x08,
+	0x70, 0x08, 0x99, 0x97, 0x90, 0xb4, 0x4a, 0xe4, 0xe3, 0x53, 0x16, 0xd8, 0x5c, 0x5f, 0x50, 0x2d,
+	0x51, 0x12, 0x5e, 0x84, 0xda, 0x03, 0xcb, 0x19, 0x86, 0xcd, 0xc0, 0x35, 0xa8, 0x2a, 0xd1, 0xb3,
+	0xcf, 0xf1, 0x3a, 0xac, 0x1e, 0x50, 0xbe, 0x17, 0x36, 0x23, 0x6a, 0x18, 0xbe, 0x23, 0xbb, 0x98,
+	0x52, 0x8b, 0x2a, 0x6e, 0x42, 0x35, 0xea, 0x1a, 0xd3, 0x35, 0xe9, 0x22, 0x51, 0xe0, 0x7d, 0xa8,
+	0x7f, 0xea, 0x0e, 0x2d, 0x27, 0xd5, 0xf3, 0x80, 0x51, 0xdf, 0x21, 0xe3, 0xb8, 0xe7, 0x91, 0x2c,
+	0xee, 0x3c, 0xc2, 0xd8, 0x37, 0xae, 0x3f, 0x08, 0x6b, 0x1f, 0xcb, 0x18, 0x03, 0x84, 0x76, 0xe2,
+	0xce, 0x9d, 0x50, 0x27, 0x34, 0xa1, 0x04, 0x3c, 0x82, 0xe5, 0x8f, 0x1d, 0xd2, 0xb3, 0xe9, 0x76,
+	0xdf, 0x7e, 0x4e, 0x7f, 0x22, 0x2b, 0x66, 0x0d, 0x1d, 0xc2, 0x03, 0x9f, 0x86, 0x6f, 0x78, 0xa2,
+	0xc0, 0x6d, 0x40, 0xa9, 0x42, 0x44, 0xbe, 0xc4, 0x40, 0x24, 0x7e, 0xe4, 0x19, 0xdf, 0x84, 0xe5,
+	0x29, 0xa4, 0x88, 0x3e, 0x0f, 0xb7, 0x0c, 0x4b, 0xa9, 0xd8, 0x45, 0x0f, 0x8e, 0xc0, 0x38, 0xf0,
+	0x89, 0x33, 0xf8, 0x9c, 0x51, 0xff, 0xc8, 0xcd, 0xfa, 0x7a, 0x46, 0x5e, 0xf1, 0x5c, 0x15, 0xa7,
+	0xe7, 0x0a, 0x1b, 0xa0, 0xe7, 0x5a, 0x15, 0x1e, 0xef, 0xc2, 0xca, 0xae, 0x4f, 0x09, 0xa7, 0xe2,
+	0xf2, 0x79, 0x1b, 0xb6, 0x02, 0x8d, 0xb4, 0x31, 0x61, 0xff, 0x1d, 0x58, 0x57, 0xaa, 0xeb, 0x14,
+	0x6e, 0x1d, 0x56, 0xb3, 0x60, 0x61, 0xe3, 0x14, 0x36, 0x0e, 0x83, 0x1e, 0xeb, 0xfb, 0x56, 0x8f,
+	0xaa, 0x61, 0xbe, 0x26, 0x9b, 0xa8, 0x49, 0x8d, 0x66, 0x5a, 0x49, 0x31, 0xad, 0x95, 0x24, 0x01,
+	0xc4, 0x7c, 0xd9, 0x77, 0x03, 0x87, 0xcb, 0x59, 0x5d, 0x34, 0x95, 0x80, 0x1f, 0x29, 0x2a, 0x7e,
+	0x69, 0x2e, 0x15, 0x45, 0x87, 0x2e, 0x15, 0x45, 0xff, 0xaa, 0xc1, 0xfc, 0x3d, 0xca, 0x18, 0x19,
+	0xaa, 0x4a, 0xbb, 0xcc, 0x92, 0xdc, 0xa3, 0xd8, 0x2a, 0x96, 0x85, 0x45, 0x7e, 0xee, 0x45, 0xad,
+	0x96, 0x67, 0xf4, 0x21, 0x54, 0xe3, 0x55, 0x23, 0x5d, 0xd5, 0xb6, 0x8c, 0x8e, 0xda, 0x35, 0x9d,
+	0x68, 0x19, 0x75, 0x8e, 0x22, 0x84, 0x99, 0x80, 0x85, 0xa7, 0x31, 0xe5, 0x44, 0xe4, 0x21, 0xc3,
+	0xa9, 0x9b, 0xb1, 0x2c, 0xe2, 0x94, 0x7c, 0x2e, 0x99, 0xaa, 0x6e, 0x2a, 0x01, 0xff, 0xa1, 0x41,
+	0xe5, 0xd0, 0xb6, 0xfa, 0xe9, 0x9c, 0xb5, 0xdc, 0x9c, 0x8b, 0xa9, 0x9c, 0x97, 0xa0, 0xc8, 0xdd,
+	0xb0, 0x0a, 0x45, 0xee, 0x4e, 0x97, 0xbd, 0x12, 0x96, 0x3d, 0xde, 0x31, 0x15, 0xf5, 0xa4, 0xdc,
+	0x31, 0x3a, 0xcc, 0x8f, 0x08, 0xbb, 0x2f, 0xd4, 0x73, 0x92, 0x31, 0x23, 0x51, 0xa0, 0x47, 0x94,
+	0x0c, 0x24, 0x0b, 0x96, 0x4c, 0x79, 0x46, 0x5b, 0x22, 0x1f, 0x59, 0x44, 0x26, 0x09, 0xb0, 0xb6,
+	0xb5, 0x91, 0x61, 0xed, 0xb0, 0xc6, 0x66, 0x8c, 0xc3, 0x47, 0x50, 0x0f, 0x95, 0x9f, 0x38, 0x5e,
+	0xc0, 0xe3, 0x0a, 0x6b, 0xa9, 0x0a, 0xa7, 0xeb, 0x54, 0xbc, 0xac, 0x4e, 0xa5, 0x74, 0x9d, 0x7e,
+	0xd3, 0x60, 0x75, 0xdb, 0xf3, 0xa8, 0xf3, 0x02, 0xde, 0xa2, 0x0f, 0x52, 0x59, 0x95, 0x64, 0x56,
+	0xaf, 0xe6, 0x67, 0x25, 0x13, 0x48, 0x52, 0x43, 0x6d, 0x68, 0xd0, 0x33, 0x8f, 0xf6, 0x39, 0x1d,
+	0x3c, 0xa4, 0x3e, 0x13, 0xef, 0x53, 0x59, 0x56, 0x2b, 0xab, 0xc6, 0xb7, 0x60, 0x65, 0x3a, 0xda,
+	0x90, 0xba, 0x64, 0x27, 0xb5, 0xa4, 0x93, 0x6f, 0xdf, 0x84, 0x6a, 0xbc, 0xf8, 0x50, 0x0d, 0xe6,
+	0xf7, 0x3f, 0x33, 0xbf, 0xd8, 0x36, 0xf7, 0x96, 0x0b, 0xa8, 0x0e, 0x0b, 0x3b, 0xdb, 0xbb, 0x77,
+	0xa5, 0xa4, 0x6d, 0xfd, 0x52, 0x85, 0xf9, 0x70, 0xff, 0xa2, 0x13, 0xa8, 0xa7, 0x37, 0x09, 0xc2,
+	0x99, 0xe8, 0x73, 0xb6, 0x8f, 0xd1, 0xba, 0x12, 0x23, 0xd7, 0xd6, 0x0f, 0x7f, 0xfe, 0xf3, 0x73,
+	0xb1, 0x81, 0x16, 0xbb, 0xa7, 0x77, 0xba, 0xf1, 0x0e, 0x42, 0x2e, 0xd4, 0x52, 0x58, 0xf4, 0xfa,
+	0xe5, 0x76, 0x22, 0x57, 0x37, 0xae, 0x82, 0x08, 0x4f, 0x9b, 0xd2, 0xd3, 0x06, 0x5a, 0x9b, 0xf2,
+	0xd4, 0xfd, 0x56, 0x50, 0xd7, 0x63, 0xf4, 0x11, 0x54, 0xe4, 0xb2, 0x42, 0xd9, 0xa6, 0xa4, 0x57,
+	0xa1, 0xf1, 0x4a, 0xfe, 0xa5, 0x28, 0xf3, 0x3d, 0xa8, 0xc6, 0xdb, 0x00, 0x65, 0x83, 0xc9, 0xee,
+	0x38, 0xe3, 0xb5, 0xcb, 0x01, 0x22, 0xd6, 0x02, 0x3a, 0x81, 0xd5, 0x1c, 0xd2, 0x47, 0x6f, 0x65,
+	0xb3, 0xbc, 0x74, 0xdd, 0x18, 0xb7, 0xae, 0x03, 0x55, 0xce, 0x1e, 0x00, 0x24, 0xc4, 0x8f, 0xb2,
+	0x4d, 0x9b, 0x59, 0x30, 0x46, 0xf3, 0x0a, 0x84, 0xb2, 0xf8, 0x35, 0x2c, 0x4d, 0xaf, 0x02, 0xf4,
+	0x46, 0xee, 0x33, 0xd9, 0xa0, 0xf1, 0x33, 0x50, 0xca, 0xfa, 0x3e, 0x40, 0xc2, 0xec, 0x33, 0xf1,
+	0xce, 0x90, 0xbe, 0xb1, 0x96, 0x41, 0x48, 0xea, 0xc3, 0x05, 0xf4, 0x10, 0xea, 0xe9, 0x79, 0x99,
+	0x79, 0xa5, 0x73, 0x46, 0x7f, 0xe6, 0x95, 0x9e, 0x19, 0x38, 0x5c, 0x40, 0x26, 0x34, 0x32, 0x1b,
+	0x0f, 0xbd, 0x99, 0x0d, 0x21, 0x77, 0x23, 0x5e, 0x16, 0xe9, 0xbb, 0x9a, 0xe8, 0x51, 0xf2, 0xf5,
+	0x9f, 0x9b, 0xf3, 0xd4, 0x3f, 0xc7, 0x4c, 0x8f, 0x32, 0xbf, 0x0e, 0xb8, 0x80, 0xee, 0x43, 0x59,
+	0x7c, 0x3e, 0x22, 0x23, 0x83, 0x4c, 0x7d, 0x62, 0x1a, 0x7a, 0xee, 0x9d, 0x78, 0x7e, 0x59, 0x8e,
+	0x13, 0xa0, 0x05, 0x31, 0x4e, 0x9e, 0xb0, 0x73, 0x06, 0x90, 0x7c, 0xae, 0xa3, 0x9c, 0xd1, 0x9f,
+	0xfe, 0x97, 0x98, 0x89, 0x30, 0xf3, 0xad, 0x8f, 0xdb, 0xd2, 0x03, 0x46, 0xad, 0xcc, 0xc0, 0x46,
+	0xc7, 0xc7, 0xdd, 0xf0, 0xf9, 0x9d, 0xdb, 0x4f, 0x2e, 0x9a, 0xda, 0xd3, 0x8b, 0xa6, 0xf6, 0xf7,
+	0x45, 0x53, 0xfb, 0xf7, 0xa2, 0xa9, 0x7d, 0x3f, 0x69, 0x6a, 0x3f, 0x4d, 0x9a, 0x85, 0xdf, 0x27,
+	0x4d, 0xed, 0xc9, 0xa4, 0x59, 0x78, 0x3a, 0x69, 0x16, 0xfe, 0x9a, 0x34, 0x0b, 0x5f, 0x95, 0x88,
+	0x67, 0xf5, 0xe6, 0xe4, 0x3a, 0x7d, 0xef, 0xbf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x88, 0x00, 0x3e,
+	0x49, 0x38, 0x0e, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1327,7 +1680,9 @@ type StreamsClient interface {
 	ReadStream(ctx context.Context, in *ReadStreamRequest, opts ...grpc.CallOption) (*Slice, error)
 	AppendStream(ctx context.Context, in *AppendStreamRequest, opts ...grpc.CallOption) (*AppendStreamReply, error)
 	SubscribeStream(ctx context.Context, in *SubscribeStreamRequest, opts ...grpc.CallOption) (Streams_SubscribeStreamClient, error)
+	ReadGlobal(ctx context.Context, in *ReadGlobalRequest, opts ...grpc.CallOption) (*ReadGlobalReply, error)
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingReply, error)
+	GetStreams(ctx context.Context, in *GetStreamsRequest, opts ...grpc.CallOption) (*GetStreamsReply, error)
 }
 
 type streamsClient struct {
@@ -1451,9 +1806,27 @@ func (x *streamsSubscribeStreamClient) Recv() (*Slice, error) {
 	return m, nil
 }
 
+func (c *streamsClient) ReadGlobal(ctx context.Context, in *ReadGlobalRequest, opts ...grpc.CallOption) (*ReadGlobalReply, error) {
+	out := new(ReadGlobalReply)
+	err := c.cc.Invoke(ctx, "/streamsdb.api.Streams/ReadGlobal", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *streamsClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingReply, error) {
 	out := new(PingReply)
 	err := c.cc.Invoke(ctx, "/streamsdb.api.Streams/Ping", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *streamsClient) GetStreams(ctx context.Context, in *GetStreamsRequest, opts ...grpc.CallOption) (*GetStreamsReply, error) {
+	out := new(GetStreamsReply)
+	err := c.cc.Invoke(ctx, "/streamsdb.api.Streams/GetStreams", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1472,7 +1845,9 @@ type StreamsServer interface {
 	ReadStream(context.Context, *ReadStreamRequest) (*Slice, error)
 	AppendStream(context.Context, *AppendStreamRequest) (*AppendStreamReply, error)
 	SubscribeStream(*SubscribeStreamRequest, Streams_SubscribeStreamServer) error
+	ReadGlobal(context.Context, *ReadGlobalRequest) (*ReadGlobalReply, error)
 	Ping(context.Context, *PingRequest) (*PingReply, error)
+	GetStreams(context.Context, *GetStreamsRequest) (*GetStreamsReply, error)
 }
 
 func RegisterStreamsServer(s *grpc.Server, srv StreamsServer) {
@@ -1662,6 +2037,24 @@ func (x *streamsSubscribeStreamServer) Send(m *Slice) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Streams_ReadGlobal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReadGlobalRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StreamsServer).ReadGlobal(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/streamsdb.api.Streams/ReadGlobal",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StreamsServer).ReadGlobal(ctx, req.(*ReadGlobalRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Streams_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PingRequest)
 	if err := dec(in); err != nil {
@@ -1676,6 +2069,24 @@ func _Streams_Ping_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StreamsServer).Ping(ctx, req.(*PingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Streams_GetStreams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetStreamsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StreamsServer).GetStreams(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/streamsdb.api.Streams/GetStreams",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StreamsServer).GetStreams(ctx, req.(*GetStreamsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1721,8 +2132,16 @@ var _Streams_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Streams_AppendStream_Handler,
 		},
 		{
+			MethodName: "ReadGlobal",
+			Handler:    _Streams_ReadGlobal_Handler,
+		},
+		{
 			MethodName: "Ping",
 			Handler:    _Streams_Ping_Handler,
+		},
+		{
+			MethodName: "GetStreams",
+			Handler:    _Streams_GetStreams_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -1733,6 +2152,208 @@ var _Streams_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Metadata: "api/api.proto",
+}
+
+func (m *ReadGlobalRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ReadGlobalRequest) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Database) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(len(m.Database)))
+		i += copy(dAtA[i:], m.Database)
+	}
+	if len(m.From) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(len(m.From)))
+		i += copy(dAtA[i:], m.From)
+	}
+	if m.Limit != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(m.Limit))
+	}
+	return i, nil
+}
+
+func (m *ReadGlobalReply) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ReadGlobalReply) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Database) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(len(m.Database)))
+		i += copy(dAtA[i:], m.Database)
+	}
+	if len(m.From) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(len(m.From)))
+		i += copy(dAtA[i:], m.From)
+	}
+	if len(m.Next) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(len(m.Next)))
+		i += copy(dAtA[i:], m.Next)
+	}
+	if len(m.Values) > 0 {
+		for _, s := range m.Values {
+			dAtA[i] = 0x22
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
+	}
+	return i, nil
+}
+
+func (m *GetStreamsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetStreamsRequest) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Database) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(len(m.Database)))
+		i += copy(dAtA[i:], m.Database)
+	}
+	if len(m.Cursor) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(len(m.Cursor)))
+		i += copy(dAtA[i:], m.Cursor)
+	}
+	if m.Direction != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(m.Direction))
+	}
+	return i, nil
+}
+
+func (m *GetStreamsReply) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetStreamsReply) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Total != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(m.Total))
+	}
+	if len(m.Cursor) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(len(m.Cursor)))
+		i += copy(dAtA[i:], m.Cursor)
+	}
+	if m.Direction != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(m.Direction))
+	}
+	if m.HasBefore {
+		dAtA[i] = 0x20
+		i++
+		if m.HasBefore {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.HasAfter {
+		dAtA[i] = 0x28
+		i++
+		if m.HasAfter {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if len(m.BeforeCursor) > 0 {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(len(m.BeforeCursor)))
+		i += copy(dAtA[i:], m.BeforeCursor)
+	}
+	if len(m.AfterCursor) > 0 {
+		dAtA[i] = 0x3a
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(len(m.AfterCursor)))
+		i += copy(dAtA[i:], m.AfterCursor)
+	}
+	if len(m.Result) > 0 {
+		for _, s := range m.Result {
+			dAtA[i] = 0x42
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
+	}
+	return i, nil
 }
 
 func (m *PingRequest) Marshal() (dAtA []byte, err error) {
@@ -2188,10 +2809,10 @@ func (m *ReadStreamRequest) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintApi(dAtA, i, uint64(m.From))
 	}
-	if m.Count != 0 {
+	if m.Limit != 0 {
 		dAtA[i] = 0x20
 		i++
-		i = encodeVarintApi(dAtA, i, uint64(m.Count))
+		i = encodeVarintApi(dAtA, i, uint64(m.Limit))
 	}
 	return i, nil
 }
@@ -2211,14 +2832,19 @@ func (m *Message) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Position != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintApi(dAtA, i, uint64(m.Position))
+	}
 	if len(m.Type) > 0 {
-		dAtA[i] = 0xa
+		dAtA[i] = 0x12
 		i++
 		i = encodeVarintApi(dAtA, i, uint64(len(m.Type)))
 		i += copy(dAtA[i:], m.Type)
 	}
 	if m.Timestamp != nil {
-		dAtA[i] = 0x12
+		dAtA[i] = 0x1a
 		i++
 		i = encodeVarintApi(dAtA, i, uint64(m.Timestamp.Size()))
 		n1, err := m.Timestamp.MarshalTo(dAtA[i:])
@@ -2228,13 +2854,13 @@ func (m *Message) MarshalTo(dAtA []byte) (int, error) {
 		i += n1
 	}
 	if len(m.Metadata) > 0 {
-		dAtA[i] = 0x1a
+		dAtA[i] = 0x22
 		i++
 		i = encodeVarintApi(dAtA, i, uint64(len(m.Metadata)))
 		i += copy(dAtA[i:], m.Metadata)
 	}
 	if len(m.Value) > 0 {
-		dAtA[i] = 0x22
+		dAtA[i] = 0x2a
 		i++
 		i = encodeVarintApi(dAtA, i, uint64(len(m.Value)))
 		i += copy(dAtA[i:], m.Value)
@@ -2428,6 +3054,112 @@ func encodeVarintApi(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return offset + 1
 }
+func (m *ReadGlobalRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Database)
+	if l > 0 {
+		n += 1 + l + sovApi(uint64(l))
+	}
+	l = len(m.From)
+	if l > 0 {
+		n += 1 + l + sovApi(uint64(l))
+	}
+	if m.Limit != 0 {
+		n += 1 + sovApi(uint64(m.Limit))
+	}
+	return n
+}
+
+func (m *ReadGlobalReply) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Database)
+	if l > 0 {
+		n += 1 + l + sovApi(uint64(l))
+	}
+	l = len(m.From)
+	if l > 0 {
+		n += 1 + l + sovApi(uint64(l))
+	}
+	l = len(m.Next)
+	if l > 0 {
+		n += 1 + l + sovApi(uint64(l))
+	}
+	if len(m.Values) > 0 {
+		for _, s := range m.Values {
+			l = len(s)
+			n += 1 + l + sovApi(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *GetStreamsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Database)
+	if l > 0 {
+		n += 1 + l + sovApi(uint64(l))
+	}
+	l = len(m.Cursor)
+	if l > 0 {
+		n += 1 + l + sovApi(uint64(l))
+	}
+	if m.Direction != 0 {
+		n += 1 + sovApi(uint64(m.Direction))
+	}
+	return n
+}
+
+func (m *GetStreamsReply) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Total != 0 {
+		n += 1 + sovApi(uint64(m.Total))
+	}
+	l = len(m.Cursor)
+	if l > 0 {
+		n += 1 + l + sovApi(uint64(l))
+	}
+	if m.Direction != 0 {
+		n += 1 + sovApi(uint64(m.Direction))
+	}
+	if m.HasBefore {
+		n += 2
+	}
+	if m.HasAfter {
+		n += 2
+	}
+	l = len(m.BeforeCursor)
+	if l > 0 {
+		n += 1 + l + sovApi(uint64(l))
+	}
+	l = len(m.AfterCursor)
+	if l > 0 {
+		n += 1 + l + sovApi(uint64(l))
+	}
+	if len(m.Result) > 0 {
+		for _, s := range m.Result {
+			l = len(s)
+			n += 1 + l + sovApi(uint64(l))
+		}
+	}
+	return n
+}
+
 func (m *PingRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -2670,8 +3402,8 @@ func (m *ReadStreamRequest) Size() (n int) {
 	if m.From != 0 {
 		n += 1 + sovApi(uint64(m.From))
 	}
-	if m.Count != 0 {
-		n += 1 + sovApi(uint64(m.Count))
+	if m.Limit != 0 {
+		n += 1 + sovApi(uint64(m.Limit))
 	}
 	return n
 }
@@ -2682,6 +3414,9 @@ func (m *Message) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.Position != 0 {
+		n += 1 + sovApi(uint64(m.Position))
+	}
 	l = len(m.Type)
 	if l > 0 {
 		n += 1 + l + sovApi(uint64(l))
@@ -2809,6 +3544,676 @@ func sovApi(x uint64) (n int) {
 }
 func sozApi(x uint64) (n int) {
 	return sovApi(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *ReadGlobalRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowApi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ReadGlobalRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ReadGlobalRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Database", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Database = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field From", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthApi
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.From = append(m.From[:0], dAtA[iNdEx:postIndex]...)
+			if m.From == nil {
+				m.From = []byte{}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
+			}
+			m.Limit = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Limit |= (int32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipApi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthApi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ReadGlobalReply) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowApi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ReadGlobalReply: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ReadGlobalReply: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Database", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Database = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field From", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthApi
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.From = append(m.From[:0], dAtA[iNdEx:postIndex]...)
+			if m.From == nil {
+				m.From = []byte{}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Next", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthApi
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Next = append(m.Next[:0], dAtA[iNdEx:postIndex]...)
+			if m.Next == nil {
+				m.Next = []byte{}
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Values", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Values = append(m.Values, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipApi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthApi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetStreamsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowApi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetStreamsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetStreamsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Database", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Database = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Cursor", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Cursor = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Direction", wireType)
+			}
+			m.Direction = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Direction |= (Direction(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipApi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthApi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetStreamsReply) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowApi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetStreamsReply: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetStreamsReply: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Total", wireType)
+			}
+			m.Total = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Total |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Cursor", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Cursor = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Direction", wireType)
+			}
+			m.Direction = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Direction |= (Direction(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HasBefore", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.HasBefore = bool(v != 0)
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HasAfter", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.HasAfter = bool(v != 0)
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BeforeCursor", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BeforeCursor = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AfterCursor", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AfterCursor = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Result", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthApi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Result = append(m.Result, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipApi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthApi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *PingRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -4272,9 +5677,9 @@ func (m *ReadStreamRequest) Unmarshal(dAtA []byte) error {
 			}
 		case 4:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Count", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
 			}
-			m.Count = 0
+			m.Limit = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowApi
@@ -4284,7 +5689,7 @@ func (m *ReadStreamRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Count |= (uint32(b) & 0x7F) << shift
+				m.Limit |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4340,6 +5745,25 @@ func (m *Message) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Position", wireType)
+			}
+			m.Position = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowApi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Position |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
 			}
@@ -4368,7 +5792,7 @@ func (m *Message) Unmarshal(dAtA []byte) error {
 			}
 			m.Type = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 2:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Timestamp", wireType)
 			}
@@ -4401,7 +5825,7 @@ func (m *Message) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 3:
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
 			}
@@ -4432,7 +5856,7 @@ func (m *Message) Unmarshal(dAtA []byte) error {
 				m.Metadata = []byte{}
 			}
 			iNdEx = postIndex
-		case 4:
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
 			}
