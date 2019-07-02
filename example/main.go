@@ -6,12 +6,12 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	sdb "github.com/streamsdb/driver"
+	sdb "github.com/streamsdb/driver/go/sdb"
 )
 
 func main() {
 	// create streamsdb connection
-	conn := sdb.MustOpen("sdb://sdb03.streamsdb.io:443?tls=1")
+	conn := sdb.MustOpen("sdb://sdb-01.streamsdb.io:443/default?tls=1&gzip=1")
 	db := conn.DB("example")
 	defer conn.Close()
 
@@ -22,7 +22,7 @@ func main() {
 	go func() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
-			_, err := db.Append("inputs", sdb.MessageInput{Value: scanner.Bytes()})
+			_, err := db.Append("inputs", -1, sdb.MessageInput{Value: scanner.Bytes()})
 			if err != nil {
 				errs <- errors.Wrap(err, "append error")
 				return
@@ -32,7 +32,7 @@ func main() {
 
 	// watch the inputs streams for messages and print them
 	go func() {
-		watch := db.Watch("inputs", -1, 10)
+		watch := db.Subscribe("inputs", -1, 10)
 		for slice := range watch.Slices {
 			for _, msg := range slice.Messages {
 				println("received: ", string(msg.Value))
