@@ -70,6 +70,7 @@ type StreamPage struct {
 type DB interface {
 	Append(stream string, expectedVersion int64, messages ...MessageInput) (int64, error)
 	Subscribe(stream string, from int64, limit int) *Subscription
+	DeleteMessage(stream string, at int64) error
 	Read(stream string, from int64, limit int) (Slice, error)
 	ReadGlobal(from []byte, limit int) (GlobalSlice, error)
 	StreamsAfter(page *StreamPage) (StreamPage, error)
@@ -255,6 +256,15 @@ func Open(cs string) (Connection, error) {
 	}
 
 	return grpcConn, nil
+}
+
+func (this *collectionScope) DeleteMessage(stream string, at int64) error {
+	_, err := this.client.DeleteMessage(this.ctx, &api.DeleteMessageRequest{
+		Database: this.db,
+		Stream:   stream,
+		Position: at,
+	})
+	return err
 }
 
 func (this *collectionScope) Append(stream string, expectedVersion int64, messages ...MessageInput) (int64, error) {
