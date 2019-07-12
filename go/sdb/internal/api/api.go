@@ -56,7 +56,7 @@ func (Direction) EnumDescriptor() ([]byte, []int) {
 type DeleteMessageRequest struct {
 	Database string `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
 	Stream   string `protobuf:"bytes,2,opt,name=stream,proto3" json:"stream,omitempty"`
-	Position string `protobuf:"bytes,3,opt,name=position,proto3" json:"position,omitempty"`
+	Position int64  `protobuf:"varint,3,opt,name=position,proto3" json:"position,omitempty"`
 }
 
 func (m *DeleteMessageRequest) Reset()         { *m = DeleteMessageRequest{} }

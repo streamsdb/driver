@@ -288,6 +288,7 @@ func (this *collectionScope) Append(stream string, expectedVersion int64, messag
 }
 
 type Message struct {
+	Position  int64
 	Type      string
 	Timestamp time.Time
 	Header    []byte
@@ -384,6 +385,7 @@ func (this *collectionScope) Read(stream string, from int64, limit int) (Slice, 
 		timestamp, _ := types.TimestampFromProto(m.Timestamp)
 
 		messages[i] = Message{
+			Position:  m.Position,
 			Type:      m.Type,
 			Timestamp: timestamp,
 			Header:    m.Metadata,
@@ -428,6 +430,7 @@ func (this *collectionScope) Subscribe(stream string, from int64, count int) *Su
 				timestamp, _ := types.TimestampFromProto(m.Timestamp)
 
 				messages[i] = Message{
+					Position:  m.Position,
 					Type:      m.Type,
 					Timestamp: timestamp,
 					Header:    m.Metadata,
