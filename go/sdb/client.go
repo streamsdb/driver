@@ -22,6 +22,13 @@ import (
 
 // MessageInput holds the data to be appended to a stream.
 type MessageInput struct {
+	// The id of the message (not required!).
+	// If set, this is used for idempotentency. When appending
+	// a message streamsdb checks if there is already a message
+	// present with this Id. If so, the append is skipped.
+	// This makes an append request with messages with id safe for
+	// retrying.
+	Id string
 	// The name of the message type.
 	Type string
 	// The headers that will be included in the record.
@@ -271,7 +278,9 @@ func (this *collectionScope) Append(stream string, expectedVersion int64, messag
 	inputs := make([]*api.MessageInput, len(messages), len(messages))
 
 	for i, m := range messages {
-		inputs[i] = &api.MessageInput{Type: m.Type, Metadata: m.Headers, Value: m.Value}
+		inputs[i] = &api.MessageInput{
+			Id: m.Id, Type: m.Type, Metadata: m.Headers, Value: m.Value,
+		}
 	}
 
 	result, err := this.client.AppendStream(this.ctx, &api.AppendStreamRequest{
