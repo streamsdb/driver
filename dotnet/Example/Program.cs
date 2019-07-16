@@ -11,9 +11,11 @@ namespace Example
     {
         static void Main(string[] args)
         {
-            var conn = Connection.Open("sdb://user:password@sdb03.streamsdb.io:443/example");
+            var conn = Connection.Open("sdb://sdb-01.streamsdb.io:443/default");
             var db = conn.DB();
+            var streamName = "chat";
 
+            // read user input and append it to the stream
             var input = Task.Run(async () =>
             {
                 Console.WriteLine("enter a message an press [enter]");
@@ -23,7 +25,7 @@ namespace Example
                     try
                     {
                         var line = Console.ReadLine();
-                        await db.Append("stream-1", new MessageInput
+                        await db.Append(streamName, new MessageInput
                         {
                             Type = "UTF8String",
                             Value = Encoding.UTF8.GetBytes(line)
@@ -36,11 +38,11 @@ namespace Example
                 }
             });
 
-            var watch = Task.Run(async () =>
+            var read = Task.Run(async () =>
             {
                 try
                 {
-                    var slices = db.Watch("stream-1", -1, 10);
+                    var slices = db.Subscribe(streamName, -1, 10);
                     var enumerator = slices.GetEnumerator();
 
                     while (await enumerator.MoveNext(CancellationToken.None))
@@ -54,11 +56,11 @@ namespace Example
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("fatal error in watch: " + e);
+                    Console.WriteLine("read error: " + e);
                 }
             });
 
-                Task.WaitAny(input, watch);
+            Task.WaitAny(input, read);
         }
     }
 }

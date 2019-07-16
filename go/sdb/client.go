@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/streamsdb/driver/go/sdb/internal/api"
 	"google.golang.org/grpc"
 
-	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 	_ "google.golang.org/grpc/encoding/gzip"
@@ -22,17 +22,17 @@ import (
 
 // MessageInput holds the data to be appended to a stream.
 type MessageInput struct {
-	// The id of the message (not required!).
+	// The id of the message (not required).
 	// If set, this is used for idempotentency. When appending
 	// a message streamsdb checks if there is already a message
 	// present with this Id. If so, the append is skipped.
 	// This makes an append request with messages with id safe for
 	// retrying.
-	Id string
+	ID string
 	// The name of the message type.
 	Type string
 	// The headers that will be included in the record.
-	Headers []byte
+	Header []byte
 	// The content of the message.
 	Value []byte
 }
@@ -124,14 +124,13 @@ type Connection interface {
 
 	WithToken(token string) Connection
 
-	Ping() (time.Duration, error)
+	Ping() error
 }
 
-func (this *grpcConnection) Ping() (time.Duration, error) {
-	started := time.Now()
+func (this *grpcConnection) Ping() error {
 	_, err := this.client.Ping(this.ctx, &api.PingRequest{})
 
-	return time.Since(started), err
+	return err
 }
 
 func (this *grpcConnection) Databases() ([]string, error) {
@@ -181,14 +180,14 @@ func (this *grpcConnection) Login(username string, password string) (string, err
 
 func (this *grpcConnection) DB(name string) DB {
 	if len(name) == 0 {
-		name = strings.TrimPrefix(this.col, "/")
+		name = strings.TrimPrefix(this.db, "/")
 	}
 
 	return &collectionScope{this.client, name, this.ctx}
 }
 
 func MustOpenDefault() Connection {
-	conn, err := Open("sdb://localhost:6000?insecure=1")
+	conn, err := OpenDefault()
 	if err != nil {
 		panic(err)
 	}
@@ -196,9 +195,18 @@ func MustOpenDefault() Connection {
 	return conn
 }
 
+func OpenDefault() (Connection, error) {
+	connString := "sdb://localhost:6000/default?insecure=1&block=1"
+	if sdbHost := os.Getenv("SDB_HOST"); len(sdbHost) > 0 {
+		connString = sdbHost
+	}
+
+	return Open(connString)
+}
+
 // See: Open
-func MustOpen(cs string) Connection {
-	conn, err := Open(cs)
+func MustOpen(connectionString string) Connection {
+	conn, err := Open(connectionString)
 	if err != nil {
 		panic(fmt.Sprintf("streamsdb open error: %v", err.Error()))
 	}
@@ -208,12 +216,14 @@ func MustOpen(cs string) Connection {
 // Open opens a connection to the specified streamsdb.
 //
 // The format of the url is:
-// sdb://[username:password@]host[:port]/[collection]?[option_name]=[option_value]
-func Open(cs string) (Connection, error) {
-	if !strings.HasPrefix(cs, "sdb://") {
-		return nil, fmt.Errorf("invalid streamsdb connection string '%v': not starting with 'sdb://'", cs)
+// sdb://[username:password@]host[:port]/[database]?[option_name]=[option_value]
+//
+// See "connection string documentation" for more information: https://streamsdb.io/docs/connection-string
+func Open(connectionString string) (Connection, error) {
+	if !strings.HasPrefix(connectionString, "sdb://") {
+		return nil, fmt.Errorf("invalid streamsdb connection string '%v': not starting with 'sdb://'", connectionString)
 	}
-	u, err := url.Parse(cs)
+	u, err := url.Parse(connectionString)
 	if err != nil {
 		return nil, err
 	}
@@ -240,9 +250,6 @@ func Open(cs string) (Connection, error) {
 	}
 	if u.Query().Get("tls") == "1" {
 		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
-	}
-	if u.Query().Get("lbrr") == "1" {
-		opts = append(opts, grpc.WithBalancerName(roundrobin.Name))
 	}
 
 	conn, err := grpc.Dial(u.Host, opts...)
@@ -279,7 +286,7 @@ func (this *collectionScope) Append(stream string, expectedVersion int64, messag
 
 	for i, m := range messages {
 		inputs[i] = &api.MessageInput{
-			Id: m.Id, Type: m.Type, Metadata: m.Headers, Value: m.Value,
+			Id: m.ID, Type: m.Type, Header: m.Header, Value: m.Value,
 		}
 	}
 
@@ -307,7 +314,6 @@ type Message struct {
 type Slice struct {
 	Stream   string
 	From     int64
-	To       int64
 	Next     int64
 	HasNext  bool
 	Head     int64
@@ -397,14 +403,13 @@ func (this *collectionScope) Read(stream string, from int64, limit int) (Slice, 
 			Position:  m.Position,
 			Type:      m.Type,
 			Timestamp: timestamp,
-			Header:    m.Metadata,
+			Header:    m.Header,
 			Value:     m.Value}
 	}
 
 	return Slice{
 		Stream:   stream,
 		From:     slice.From,
-		To:       slice.To,
 		Next:     slice.Next,
 		HasNext:  slice.HasNext,
 		Head:     slice.Head,
@@ -442,7 +447,7 @@ func (this *collectionScope) Subscribe(stream string, from int64, count int) *Su
 					Position:  m.Position,
 					Type:      m.Type,
 					Timestamp: timestamp,
-					Header:    m.Metadata,
+					Header:    m.Header,
 					Value:     m.Value,
 				}
 			}
@@ -450,7 +455,6 @@ func (this *collectionScope) Subscribe(stream string, from int64, count int) *Su
 			s := Slice{
 				Stream:   stream,
 				From:     slice.From,
-				To:       slice.To,
 				Next:     slice.Next,
 				HasNext:  slice.HasNext,
 				Head:     slice.Head,
@@ -483,5 +487,5 @@ type grpcConnection struct {
 	conn   *grpc.ClientConn
 	client api.StreamsClient
 	ctx    context.Context
-	col    string
+	db     string
 }

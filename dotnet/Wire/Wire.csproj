@@ -8,7 +8,12 @@
 </PropertyGroup>
 
 <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.6.1" />
+    <PackageReference Include="Google.Api.CommonProtos" Version="1.7.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.9" />
     <PackageReference Include="Grpc" Version="1.17.0" />
+    <PackageReference Include="Grpc.Tools" Version="1.17.0" PrivateAssets="All" />
+</ItemGroup>
+<ItemGroup>
+  <Protobuf Include="api.proto" />
 </ItemGroup>
 </Project>

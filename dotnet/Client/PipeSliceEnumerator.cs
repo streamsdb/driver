@@ -9,9 +9,9 @@ namespace StreamsDB.Client
     internal struct PipeSliceEnumerator : IAsyncEnumerable<Slice>, IAsyncEnumerator<Slice>
     {
         private readonly string _streamId;
-        private readonly IAsyncStreamReader<Streamsdb.Wire.Slice> _source;
+        private readonly IAsyncStreamReader<StreamsDB.Wire.Slice> _source;
 
-        public PipeSliceEnumerator(string streamId, IAsyncStreamReader<Streamsdb.Wire.Slice> source)
+        public PipeSliceEnumerator(string streamId, IAsyncStreamReader<StreamsDB.Wire.Slice> source)
         {
             _streamId = streamId;
             _source = source;
@@ -32,8 +32,8 @@ namespace StreamsDB.Client
                     messages[i] = new Message
                     {
                         Type = am.Type,
-                        Timestamp = am.Timestamp,
-                        Metadata = am.Metadata.ToByteArray(),
+                        Timestamp = am.Timestamp.ToDateTime(),
+                        Header = am.Header.ToByteArray(),
                         Value = am.Value.ToByteArray(),
                     };
                 }
@@ -42,7 +42,6 @@ namespace StreamsDB.Client
                 {
                     Stream = _streamId,
                     From = reply.From,
-                    To = reply.To,
                     HasNext = reply.HasNext,
                     Head = reply.Head,
                     Next = reply.Next,

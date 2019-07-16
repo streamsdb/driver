@@ -4,12 +4,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Grpc.Core;
-using Streamsdb.Wire;
+using StreamsDB.Wire;
 using Message = Client.Message;
 using MessageInput = Client.MessageInput;
 using Slice = Client.Slice;
-using WireClient = Streamsdb.Wire.Streams.StreamsClient;
-using WireMessageInput = Streamsdb.Wire.MessageInput;
+using WireClient = StreamsDB.Wire.Streams.StreamsClient;
+using WireMessageInput = StreamsDB.Wire.MessageInput;
 
 namespace StreamsDB.Client
 {
@@ -28,10 +28,11 @@ namespace StreamsDB.Client
 
         public async Task<long> Append(string streamId, params MessageInput[] messages)
         {
-            var request = new AppendRequest
+            var request = new AppendStreamRequest
             {
                 Database = _db,
                 Stream = streamId,
+                ExpectedVersion = -2,
             };
             
 
@@ -45,20 +46,20 @@ namespace StreamsDB.Client
                 request.Messages.Add(new WireMessageInput
                 {
                     Type = m.Type,
-                    Metadata = ByteString.CopyFrom(m.Metadata ?? new byte[0]),
+                    Header = ByteString.CopyFrom(m.Header ?? new byte[0]),
                     Value = ByteString.CopyFrom(m.Value ?? new byte[0]),
                 });
             }
 
-            var reply = await _client.AppendAsync(request, _metadata);
+            var reply = await _client.AppendStreamAsync(request, _metadata);
 
             return reply.From;
         }
 
-        public IAsyncEnumerable<Slice> Watch(string streamId, long from, int count,
+        public IAsyncEnumerable<Slice> Subscribe(string streamId, long from, int count,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            var watch = _client.Watch(new ReadRequest
+            var watch = _client.SubscribeStream(new SubscribeStreamRequest
             {
                 Database = _db,
                 Stream = streamId,
@@ -69,14 +70,14 @@ namespace StreamsDB.Client
             return new PipeSliceEnumerator(streamId, watch.ResponseStream);
         }
 
-        public async Task<Slice> Read(string streamId, long from, int count)
+        public async Task<Slice> Read(string streamId, long from, int limit)
         {
-            var reply = await _client.ReadAsync(new ReadRequest
+            var reply = await _client.ReadStreamAsync(new ReadStreamRequest
             {
                 Database = _db,
                 Stream = streamId,
                 From = from,
-                Count = (uint) count,
+                Limit = (uint) limit,
             }, _metadata);
 
             var messages = new Message[reply.Messages.Count];
@@ -86,9 +87,10 @@ namespace StreamsDB.Client
 
                 messages[i] = new Message
                 {
+                    Position = am.Position,
                     Type = am.Type,
-                    Timestamp = am.Timestamp,
-                    Metadata = am.Metadata.ToByteArray(),
+                    Timestamp = am.Timestamp.ToDateTime(),
+                    Header = am.Header.ToByteArray(),
                     Value = am.Value.ToByteArray(),
                 };
             }
@@ -97,7 +99,6 @@ namespace StreamsDB.Client
             {
                 Stream = streamId,
                 From = reply.From,
-                To = reply.To,
                 HasNext = reply.HasNext,
                 Head = reply.Head,
                 Next = reply.Next,

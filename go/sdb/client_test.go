@@ -9,10 +9,10 @@ import (
 )
 
 func TestAppendAndReadRoundtrip(t *testing.T) {
-	conn := sdb.MustOpenDefault()
+	conn := sdb.MustConnectDefault()
 	defer conn.Close()
 
-	db := conn.DB("sdb-test")
+	db := conn.DB("")
 
 	sid := "stream-id"
 	messages := []sdb.MessageInput{
@@ -30,7 +30,6 @@ func TestAppendAndReadRoundtrip(t *testing.T) {
 
 	assert.Equal(t, sid, slice.Stream)
 	assert.Equal(t, pos, slice.From)
-	assert.Equal(t, pos+2, slice.To)
 	assert.Equal(t, pos+3, slice.Next)
 	assert.Equal(t, false, slice.HasNext)
 	assert.Equal(t, pos+2, slice.Head)
@@ -38,20 +37,22 @@ func TestAppendAndReadRoundtrip(t *testing.T) {
 }
 
 func TestReadStream(t *testing.T) {
-	conn := sdb.MustOpenDefault()
+	conn := sdb.MustConnectDefault()
 	defer conn.Close()
 
-	db := conn.DB("sdb-test")
+	db := conn.DB("")
 
 	stream := t.Name() + "-stream"
 	messages := make([]sdb.MessageInput, 10, 10)
 	for i := range messages {
 		messages[i] = sdb.MessageInput{
-			Value: []byte(fmt.Sprintf("value-%v", i)),
+			Type:   fmt.Sprintf("type-%v", i),
+			Header: []byte(fmt.Sprintf("header-%v", i)),
+			Value:  []byte(fmt.Sprintf("value-%v", i)),
 		}
 	}
 
-	_, err := db.Append(stream, sdb.AnyVersion, messages...)
+	pos, err := db.Append(stream, sdb.AnyVersion, messages...)
 	assert.NoError(t, err)
 
 	t.Run("read from end", func(t *testing.T) {
@@ -60,15 +61,14 @@ func TestReadStream(t *testing.T) {
 
 		assert.Equal(t, sdb.Slice{
 			Stream:  stream,
-			From:    7,
-			To:      10,
-			Next:    11,
+			From:    pos + 7,
+			Next:    pos + 10,
 			HasNext: false,
-			Head:    10,
+			Head:    pos + 9,
 			Messages: []sdb.Message{
-				{Header: messages[7].Headers, Value: messages[7].Value},
-				{Header: messages[8].Headers, Value: messages[8].Value},
-				{Header: messages[9].Headers, Value: messages[9].Value},
+				{Position: pos + 7, Type: messages[7].Type, Header: messages[7].Header, Value: messages[7].Value},
+				{Position: pos + 8, Type: messages[8].Type, Header: messages[8].Header, Value: messages[8].Value},
+				{Position: pos + 9, Type: messages[9].Type, Header: messages[9].Header, Value: messages[9].Value},
 			},
 		}, slice)
 	})

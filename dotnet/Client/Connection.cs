@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Web;
 using Grpc.Core;
-using Streamsdb.Wire;
-using WireClient = Streamsdb.Wire.Streams.StreamsClient;
+using StreamsDB.Wire;
+using WireClient = StreamsDB.Wire.Streams.StreamsClient;
 
 namespace StreamsDB.Client
 {
@@ -20,11 +20,14 @@ namespace StreamsDB.Client
             _db = defaultDb;
         }
 
-        public static Connection Open(string connectionString)
+        public static Connection Open(string connectionString = null)
         {
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                throw new ArgumentNullException(nameof(connectionString));
+            if (string.IsNullOrEmpty(connectionString)) {
+              connectionString = Environment.GetEnvironmentVariable("SDB_HOST");
+            }
+
+            if (string.IsNullOrEmpty(connectionString)) {
+              throw new ArgumentNullException(nameof(connectionString), "connection string not specified and SDB_HOST environment variable is empty");
             }
             
             if (!connectionString.StartsWith("sdb://"))

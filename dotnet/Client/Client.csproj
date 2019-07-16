@@ -6,14 +6,33 @@
     <AssemblyName>StreamsDB.Client</AssemblyName>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.6.1" />
-    <PackageReference Include="Grpc" Version="1.17.0" />
-    <PackageReference Include="System.Reactive" Version="4.2.0-preview.63" />
-  </ItemGroup>
+  <PropertyGroup>
+    <AssemblyTitle>StreamsDB.Client</AssemblyTitle>
+    <Description>StreamsDB ClientApi</Description>
+    <Company>StreamsDB</Company>
+    <Copyright>Copyright © StreamsDB. All rights reserved.</Copyright>
+    <Product>StreamsDB.Client</Product>
+    <Version>1.0.0-rc</Version>
+  </PropertyGroup>
 
+  <PropertyGroup>
+    <Description>The client driver for StreamsDB. See: https://streamsdb.io</Description>
+    <Authors>StreamsDB</Authors>
+    <DebugType>portable</DebugType>
+    <AssemblyName>StreamsDB.Client</AssemblyName>
+    <PackageId>StreamsDB.Client</PackageId>
+    <PackageTags>streamsdb;client;driver;eventstore;netstandard2.0</PackageTags>
+    <PackageIconUrl>https://www.streamsdb.io/img/logo.png</PackageIconUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/streams/driver</RepositoryUrl>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wire\Wire.csproj" />
   </ItemGroup>
-  
+ 
+  <ItemGroup>
+    <PackageReference Include="System.Reactive" Version="4.1.5" />
+  </ItemGroup>
+
+ 
 </Project>
