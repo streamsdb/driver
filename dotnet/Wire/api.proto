@@ -91,6 +91,8 @@ message GetDatabasesReply{
   repeated string databases = 1;
 }
 
+
+
 message LoginRequest {
   string username = 1;
   string password = 2;
@@ -158,6 +160,7 @@ message ReadStreamRequest {
   string stream = 2;
   int64 from = 3;
   uint32 limit = 4;
+  bool reverse = 5;
 }
 
 message Message {
@@ -176,6 +179,7 @@ message Slice {
   bool hasNext = 5;
   int64 head = 6;
   repeated Message messages = 7;
+  bool reverse = 8;
 }
 
 message MessageInput {

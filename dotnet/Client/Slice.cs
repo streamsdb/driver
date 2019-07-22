@@ -8,5 +8,6 @@
         public bool HasNext { get; set; }
         public long Head { get; set; }
         public Message[] Messages { get; set; }
+        public bool Reverse {get; set; }
     }
 }

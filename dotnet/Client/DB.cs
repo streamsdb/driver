@@ -70,7 +70,11 @@ namespace StreamsDB.Client
             return new PipeSliceEnumerator(streamId, watch.ResponseStream);
         }
 
-        public async Task<Slice> Read(string streamId, long from, int limit)
+        public async Task<Slice> ReadForward(string streamId, long from, int limit) => await read(streamId, from, false, limit);
+
+        public async Task<Slice> ReadBackward(string streamId, long from, int limit) => await read(streamId, from, true, limit);
+
+        private async Task<Slice> read(string streamId, long from, bool reverse, int limit)
         {
             var reply = await _client.ReadStreamAsync(new ReadStreamRequest
             {
@@ -78,6 +82,7 @@ namespace StreamsDB.Client
                 Stream = streamId,
                 From = from,
                 Limit = (uint) limit,
+                Reverse = reverse,
             }, _metadata);
 
             var messages = new Message[reply.Messages.Count];
@@ -103,6 +108,7 @@ namespace StreamsDB.Client
                 Head = reply.Head,
                 Next = reply.Next,
                 Messages = messages,
+                Reverse = reply.Reverse,
             };
         }
     }

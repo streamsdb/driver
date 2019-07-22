@@ -74,11 +74,19 @@ type StreamPage struct {
 	HasBefore bool
 }
 
+type Direction (byte)
+
+const (
+	FORWARD  = Direction(0)
+	BACKWARD = Direction(1)
+)
+
 type DB interface {
 	Append(stream string, expectedVersion int64, messages ...MessageInput) (int64, error)
-	Subscribe(stream string, from int64, limit int) *Subscription
+	SubscribeStream(stream string, from int64, limit int) *Subscription
 	DeleteMessage(stream string, at int64) error
-	Read(stream string, from int64, limit int) (Slice, error)
+	ReadStreamForward(stream string, from int64, limit int) (Slice, error)
+	ReadStreamBackward(stream string, from int64, limit int) (Slice, error)
 	ReadGlobal(from []byte, limit int) (GlobalSlice, error)
 	StreamsAfter(page *StreamPage) (StreamPage, error)
 	StreamsBefore(page *StreamPage) (StreamPage, error)
@@ -318,6 +326,7 @@ type Slice struct {
 	HasNext  bool
 	Head     int64
 	Messages []Message
+	Reverse  bool
 }
 
 type GlobalSlice struct {
@@ -382,12 +391,20 @@ func (this *collectionScope) StreamsAfter(page *StreamPage) (StreamPage, error) 
 	}, nil
 }
 
-func (this *collectionScope) Read(stream string, from int64, limit int) (Slice, error) {
+func (this *collectionScope) ReadStreamForward(stream string, from int64, limit int) (Slice, error) {
+	return this.read(stream, from, false, limit)
+}
+func (this *collectionScope) ReadStreamBackward(stream string, from int64, limit int) (Slice, error) {
+	return this.read(stream, from, true, limit)
+}
+
+func (this *collectionScope) read(stream string, from int64, reverse bool, limit int) (Slice, error) {
 	slice, err := this.client.ReadStream(this.ctx, &api.ReadStreamRequest{
 		Database: this.db,
 		Stream:   stream,
 		From:     from,
 		Limit:    uint32(limit),
+		Reverse:  reverse,
 	})
 
 	if err != nil {
@@ -417,7 +434,7 @@ func (this *collectionScope) Read(stream string, from int64, limit int) (Slice, 
 	}, nil
 }
 
-func (this *collectionScope) Subscribe(stream string, from int64, count int) *Subscription {
+func (this *collectionScope) SubscribeStream(stream string, from int64, count int) *Subscription {
 	ctx, cancel := context.WithCancel(this.ctx)
 	slices := make(chan Slice)
 	result := &Subscription{cancel, slices, nil}
