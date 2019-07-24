@@ -88,6 +88,7 @@ func (this *grpcClient) Clone(ctx context.Context) Client {
 	return &grpcClient{
 		conn:   this.conn,
 		client: this.client,
+		db:     this.db,
 		ctx:    ctx,
 	}
 }
