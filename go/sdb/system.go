@@ -5,17 +5,19 @@ import (
 )
 
 type System interface {
+	// Authenticate trades the provided username and password for a token.
+	Authenticate(username string, password string) (string, error)
 	EnableAcl(username string, password string) error
 	CreateUser(username string, password string) error
 	CreateDatabase(name string) (DB, error)
 	GrandUserToDatabase(username string, database string) error
 }
 
-func (this *grpcConnection) System() System {
+func (this *grpcClient) System() System {
 	return this
 }
 
-func (this *grpcConnection) EnableAcl(username string, password string) error {
+func (this *grpcClient) EnableAcl(username string, password string) error {
 	_, err := this.client.EnableAcl(this.ctx, &api.EnableAclRequest{
 		Username: username,
 		Password: password,
@@ -23,7 +25,7 @@ func (this *grpcConnection) EnableAcl(username string, password string) error {
 	return err
 }
 
-func (this *grpcConnection) CreateUser(username string, password string) error {
+func (this *grpcClient) CreateUser(username string, password string) error {
 	_, err := this.client.CreateUser(this.ctx, &api.CreateUserRequest{
 		Username: username,
 		Password: password,
@@ -31,7 +33,7 @@ func (this *grpcConnection) CreateUser(username string, password string) error {
 	return err
 }
 
-func (this *grpcConnection) CreateDatabase(name string) (DB, error) {
+func (this *grpcClient) CreateDatabase(name string) (DB, error) {
 	_, err := this.client.CreateDatabase(this.ctx, &api.CreateDatabaseRequest{
 		Name: name,
 	})
@@ -46,7 +48,7 @@ func (this *grpcConnection) CreateDatabase(name string) (DB, error) {
 		ctx:    this.ctx,
 	}, nil
 }
-func (this *grpcConnection) GrandUserToDatabase(username string, database string) error {
+func (this *grpcClient) GrandUserToDatabase(username string, database string) error {
 	_, err := this.client.GrandUserToDatabase(this.ctx, &api.GrandUserToDatabaseRequest{
 		Username: username,
 		Database: database})

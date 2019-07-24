@@ -37,11 +37,11 @@ type MessageInput struct {
 	Value []byte
 }
 
-// Subscription follows a remote stream. Use the Slices channel to receive
+// StreamSubscription follows a stream. Use the Slices channel to receive
 // slices containing the messages from the remote stream.
 // The Slices channel will be closed if an error occurs or if the subscription
 // was closed.
-type Subscription struct {
+type StreamSubscription struct {
 	cancel context.CancelFunc
 
 	// Slices returns the available messages. Slices is closed if Cancel()
@@ -54,15 +54,15 @@ type Subscription struct {
 // Err returns the reason why Slices was closed, if so.
 // If Slices is not closed, Err returns nil.
 // If this subscription is canceled, Err returns nil.
-func (this *Subscription) Err() error {
+func (this *StreamSubscription) Err() error {
 	return this.err
 }
 
-// Cancel cancels this subscription. The Slices channel will be closed
+// Close cancels this subscription. The Slices channel will be closed
 // and Err() will return nil.
 //
-// Calling Cancel on an cancelled or errored subscription will do nothing.
-func (this *Subscription) Cancel() {
+// Calling Close on an cancelled or errored subscription will do nothing.
+func (this *StreamSubscription) Close() {
 	this.cancel()
 }
 
@@ -74,74 +74,63 @@ type StreamPage struct {
 	HasBefore bool
 }
 
-type Direction (byte)
-
-const (
-	FORWARD  = Direction(0)
-	BACKWARD = Direction(1)
-)
-
 type DB interface {
-	Append(stream string, expectedVersion int64, messages ...MessageInput) (int64, error)
-	SubscribeStream(stream string, from int64, limit int) *Subscription
+	AppendStream(stream string, expectedVersion int64, messages ...MessageInput) (int64, error)
+	SubscribeStream(stream string, from int64, limit int) StreamSubscription
 	DeleteMessage(stream string, at int64) error
 	ReadStreamForward(stream string, from int64, limit int) (Slice, error)
 	ReadStreamBackward(stream string, from int64, limit int) (Slice, error)
-	ReadGlobal(from []byte, limit int) (GlobalSlice, error)
-	StreamsAfter(page *StreamPage) (StreamPage, error)
-	StreamsBefore(page *StreamPage) (StreamPage, error)
+	ListStreamsAfter(page *StreamPage) (StreamPage, error)
+	ListStreamsBefore(page *StreamPage) (StreamPage, error)
 }
 
-// WithToken return a copy of the connection with the token included
-// in the context. Token will be used with subsequent calls
-// made with this connection. It overrides any token previously set.
-func (this *grpcConnection) WithToken(token string) Connection {
-	return &grpcConnection{
+func (this *grpcClient) Clone(ctx context.Context) Client {
+	return &grpcClient{
 		conn:   this.conn,
 		client: this.client,
-		ctx:    NewContextWithToken(this.ctx, token),
+		ctx:    ctx,
 	}
 }
 
-func (this *collectionScope) WithToken(token string) DB {
-	this.ctx = NewContextWithToken(this.ctx, token)
-	return this
+// ContextWithToken creates a new context with the token attached.
+func ContextWithToken(ctx context.Context, token string) context.Context {
+	md, ok := metadata.FromOutgoingContext(ctx)
+	if !ok {
+		return metadata.AppendToOutgoingContext(ctx, "token", token)
+	}
+
+	md.Set("token", token)
+	return metadata.NewOutgoingContext(ctx, md)
 }
 
-// NewContextWithToken creates a new context with the token attached.
-func NewContextWithToken(ctx context.Context, token string) context.Context {
-	return metadata.AppendToOutgoingContext(ctx, "token", token)
-}
-
-type Connection interface {
-	IsTokenSet() bool
-	SetToken(token string) error
-	Login(username string, password string) (string, error)
-
-	// Collection gets a handle for a given collection.
+type Client interface {
+	// DB gets a handle for a given database.
 	//
-	// If a collection was specified in the connection string of
+	// If a database was specified in the connection string of
 	// the client, passing an empty name (""), will returns
 	// a handle to that collection.
 	DB(name string) DB
 
 	// Databases lists all available databases.
 	Databases() ([]string, error)
+
 	Close() error
+
 	System() System
 
-	WithToken(token string) Connection
+	// Clone clones the client with the provides context.
+	Clone(ctx context.Context) Client
 
 	Ping() error
 }
 
-func (this *grpcConnection) Ping() error {
+func (this *grpcClient) Ping() error {
 	_, err := this.client.Ping(this.ctx, &api.PingRequest{})
 
 	return err
 }
 
-func (this *grpcConnection) Databases() ([]string, error) {
+func (this *grpcClient) Databases() ([]string, error) {
 	r, err := this.client.GetDatabases(this.ctx, &api.GetDatabasesRequest{})
 	if err != nil {
 		return nil, err
@@ -151,7 +140,7 @@ func (this *grpcConnection) Databases() ([]string, error) {
 }
 
 // IsTokenSet determines whether a token is set of this connection or not.
-func (this *grpcConnection) IsTokenSet() bool {
+func (this *grpcClient) IsTokenSet() bool {
 	md, ok := metadata.FromIncomingContext(this.ctx)
 	if !ok {
 		return false
@@ -160,21 +149,7 @@ func (this *grpcConnection) IsTokenSet() bool {
 	return len(md.Get("token")) > 0
 }
 
-// SetToken set a token for this connection that will be included in every
-// subsequent request.
-func (this *grpcConnection) SetToken(token string) error {
-	md, ok := metadata.FromOutgoingContext(this.ctx)
-	if !ok {
-		this.ctx = metadata.AppendToOutgoingContext(this.ctx, "token", token)
-		return nil
-	}
-
-	md.Set("token", token)
-	this.ctx = metadata.NewOutgoingContext(this.ctx, md)
-	return nil
-}
-
-func (this *grpcConnection) Login(username string, password string) (string, error) {
+func (this *grpcClient) Authenticate(username string, password string) (string, error) {
 	r, err := this.client.Login(this.ctx, &api.LoginRequest{
 		Username: username,
 		Password: password,
@@ -186,7 +161,7 @@ func (this *grpcConnection) Login(username string, password string) (string, err
 	return r.Token, nil
 }
 
-func (this *grpcConnection) DB(name string) DB {
+func (this *grpcClient) DB(name string) DB {
 	if len(name) == 0 {
 		name = strings.TrimPrefix(this.db, "/")
 	}
@@ -194,7 +169,7 @@ func (this *grpcConnection) DB(name string) DB {
 	return &collectionScope{this.client, name, this.ctx}
 }
 
-func MustOpenDefault() Connection {
+func MustOpenDefault() Client {
 	conn, err := OpenDefault()
 	if err != nil {
 		panic(err)
@@ -203,7 +178,7 @@ func MustOpenDefault() Connection {
 	return conn
 }
 
-func OpenDefault() (Connection, error) {
+func OpenDefault() (Client, error) {
 	connString := "sdb://localhost:6000/default?insecure=1&block=1"
 	if sdbHost := os.Getenv("SDB_HOST"); len(sdbHost) > 0 {
 		connString = sdbHost
@@ -213,7 +188,7 @@ func OpenDefault() (Connection, error) {
 }
 
 // See: Open
-func MustOpen(connectionString string) Connection {
+func MustOpen(connectionString string) Client {
 	conn, err := Open(connectionString)
 	if err != nil {
 		panic(fmt.Sprintf("streamsdb open error: %v", err.Error()))
@@ -227,7 +202,7 @@ func MustOpen(connectionString string) Connection {
 // sdb://[username:password@]host[:port]/[database]?[option_name]=[option_value]
 //
 // See "connection string documentation" for more information: https://streamsdb.io/docs/connection-string
-func Open(connectionString string) (Connection, error) {
+func Open(connectionString string) (Client, error) {
 	if !strings.HasPrefix(connectionString, "sdb://") {
 		return nil, fmt.Errorf("invalid streamsdb connection string '%v': not starting with 'sdb://'", connectionString)
 	}
@@ -266,15 +241,15 @@ func Open(connectionString string) (Connection, error) {
 	}
 
 	client := api.NewStreamsClient(conn)
-	grpcConn := &grpcConnection{conn, client, context.Background(), u.Path}
+	grpcConn := &grpcClient{conn, client, context.Background(), u.Path}
 
 	if user := u.User; user != nil {
 		password, _ := user.Password()
-		token, err := grpcConn.Login(user.Username(), password)
+		token, err := grpcConn.Authenticate(user.Username(), password)
 		if err != nil {
 			return nil, errors.Wrap(err, "login error")
 		}
-		grpcConn.SetToken(token)
+		grpcConn.ctx = ContextWithToken(grpcConn.ctx, token)
 	}
 
 	return grpcConn, nil
@@ -289,7 +264,7 @@ func (this *collectionScope) DeleteMessage(stream string, at int64) error {
 	return err
 }
 
-func (this *collectionScope) Append(stream string, expectedVersion int64, messages ...MessageInput) (int64, error) {
+func (this *collectionScope) AppendStream(stream string, expectedVersion int64, messages ...MessageInput) (int64, error) {
 	inputs := make([]*api.MessageInput, len(messages), len(messages))
 
 	for i, m := range messages {
@@ -312,6 +287,7 @@ func (this *collectionScope) Append(stream string, expectedVersion int64, messag
 }
 
 type Message struct {
+	ID        string
 	Position  int64
 	Type      string
 	Timestamp time.Time
@@ -353,7 +329,7 @@ func (this *collectionScope) ReadGlobal(from []byte, limit int) (GlobalSlice, er
 	}, nil
 }
 
-func (this *collectionScope) StreamsBefore(page *StreamPage) (StreamPage, error) {
+func (this *collectionScope) ListStreamsBefore(page *StreamPage) (StreamPage, error) {
 	var before string
 	if page != nil && len(page.Names) > 0 {
 		before = page.Names[0]
@@ -372,7 +348,7 @@ func (this *collectionScope) StreamsBefore(page *StreamPage) (StreamPage, error)
 	}, nil
 }
 
-func (this *collectionScope) StreamsAfter(page *StreamPage) (StreamPage, error) {
+func (this *collectionScope) ListStreamsAfter(page *StreamPage) (StreamPage, error) {
 	var after string
 	if page != nil && len(page.Names) > 0 {
 		after = page.Names[len(page.Names)-1]
@@ -434,10 +410,10 @@ func (this *collectionScope) read(stream string, from int64, reverse bool, limit
 	}, nil
 }
 
-func (this *collectionScope) SubscribeStream(stream string, from int64, count int) *Subscription {
+func (this *collectionScope) SubscribeStream(stream string, from int64, count int) StreamSubscription {
 	ctx, cancel := context.WithCancel(this.ctx)
 	slices := make(chan Slice)
-	result := &Subscription{cancel, slices, nil}
+	result := StreamSubscription{cancel, slices, nil}
 
 	go func() {
 		defer close(slices)
@@ -490,7 +466,7 @@ func (this *collectionScope) SubscribeStream(stream string, from int64, count in
 	return result
 }
 
-func (this *grpcConnection) Close() error {
+func (this *grpcClient) Close() error {
 	return this.conn.Close()
 }
 
@@ -500,7 +476,7 @@ type collectionScope struct {
 	ctx    context.Context
 }
 
-type grpcConnection struct {
+type grpcClient struct {
 	conn   *grpc.ClientConn
 	client api.StreamsClient
 	ctx    context.Context

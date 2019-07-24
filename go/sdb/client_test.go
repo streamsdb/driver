@@ -9,7 +9,7 @@ import (
 )
 
 func TestAppendAndReadRoundtrip(t *testing.T) {
-	conn := sdb.MustConnectDefault()
+	conn := sdb.MustOpenDefault()
 	defer conn.Close()
 
 	db := conn.DB("")
@@ -22,10 +22,10 @@ func TestAppendAndReadRoundtrip(t *testing.T) {
 	}
 
 	// stream creation
-	pos, err := db.Append(sid, sdb.AnyVersion, messages...)
+	pos, err := db.AppendStream(sid, sdb.AnyVersion, messages...)
 	assert.NoError(t, err)
 
-	slice, err := db.Read(sid, pos, 10)
+	slice, err := db.ReadStreamForward(sid, pos, 10)
 	assert.NoError(t, err)
 
 	assert.Equal(t, sid, slice.Stream)
@@ -37,7 +37,7 @@ func TestAppendAndReadRoundtrip(t *testing.T) {
 }
 
 func TestReadStream(t *testing.T) {
-	conn := sdb.MustConnectDefault()
+	conn := sdb.MustOpenDefault()
 	defer conn.Close()
 
 	db := conn.DB("")
@@ -52,11 +52,11 @@ func TestReadStream(t *testing.T) {
 		}
 	}
 
-	pos, err := db.Append(stream, sdb.AnyVersion, messages...)
+	pos, err := db.AppendStream(stream, sdb.AnyVersion, messages...)
 	assert.NoError(t, err)
 
 	t.Run("read from end", func(t *testing.T) {
-		slice, err := db.Read(stream, -3, 3)
+		slice, err := db.ReadStreamForward(stream, -3, 3)
 		assert.NoError(t, err)
 
 		assert.Equal(t, sdb.Slice{
@@ -90,7 +90,7 @@ func TestWatchStreamCreation(t *testing.T) {
 		return
 	}
 
-	_, err = col.Append("non-existing-stream", []sdb.MessageInput{{Value: []byte("test")}})
+	_, err = col.AppendStream("non-existing-stream", []sdb.MessageInput{{Value: []byte("test")}})
 	assert.NoError(t, err)
 
 	select {

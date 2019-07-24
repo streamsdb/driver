@@ -11,7 +11,7 @@ import (
 
 func main() {
 	// create streamsdb connection
-	conn := sdb.MustOpen("sdb://sdb-01.streamsdb.io:443/default?tls=1&block=1")
+	conn := sdb.MustOpenDefault()
 	defer conn.Close()
 
 	// get database reference
@@ -27,7 +27,7 @@ func main() {
 
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
-			_, err := db.Append("inputs", sdb.AnyVersion, sdb.MessageInput{Value: scanner.Bytes()})
+			_, err := db.AppendStream("inputs", sdb.AnyVersion, sdb.MessageInput{Type: "string", Value: scanner.Bytes()})
 			if err != nil {
 				errs <- errors.Wrap(err, "append error")
 			}
@@ -36,7 +36,7 @@ func main() {
 
 	// subscribe to the inputs stream and print messages
 	go func() {
-		subscription := db.Subscribe("inputs", -1, 10)
+		subscription := db.SubscribeStream("inputs", -1, 10)
 		for slice := range subscription.Slices {
 			for _, msg := range slice.Messages {
 				println("received: ", string(msg.Value))
