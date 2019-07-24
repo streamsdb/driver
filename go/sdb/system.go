@@ -11,6 +11,24 @@ type System interface {
 	CreateUser(username string, password string) error
 	CreateDatabase(name string) (DB, error)
 	GrandUserToDatabase(username string, database string) error
+	ReadGlobal(from []byte, limit int) (GlobalSlice, error)
+}
+
+func (this *grpcClient) ReadGlobal(from []byte, limit int) (GlobalSlice, error) {
+	reply, err := this.client.ReadGlobal(this.ctx, &api.ReadGlobalRequest{
+		Database: this.db,
+		From:     from,
+		Limit:    int32(limit),
+	})
+	if err != nil {
+		return GlobalSlice{}, err
+	}
+
+	return GlobalSlice{
+		From:   reply.From,
+		Next:   reply.Next,
+		Values: reply.Values,
+	}, nil
 }
 
 func (this *grpcClient) System() System {
