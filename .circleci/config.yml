@@ -7,7 +7,7 @@ jobs:
      - run: |
          pushd dotnet
          docker build --build-arg VERSION="1.0.0-dev.$CIRCLE_BUILD_NUM.$(echo $CIRCLE_SHA1 | cut -c -7)" -t streamsdb/dotnet-driver .
-         docker run --rm --name push-packages streamsdb/dotnet-driver --api-key $NUGET_TOKEN
+         docker run --rm --name push-packages streamsdb/dotnet-driver --source https://api.nuget.org/v3/index.json --api-key $NUGET_TOKEN
          popd
 workflows:
   version: 2
