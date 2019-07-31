@@ -14,8 +14,9 @@
 syntax = "proto3";
 package streamsdb.api;
 import "google/protobuf/timestamp.proto";
+
 option go_package = "api";
-option csharp_namespace = "StreamsDB.Wire";
+option csharp_namespace = "StreamsDB.Driver.Wire";
 
 service Streams {
   rpc GetDatabases(GetDatabasesRequest) returns (GetDatabasesReply) {
@@ -33,10 +34,8 @@ service Streams {
   rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageReply) {}
   rpc SubscribeStream (SubscribeStreamRequest) returns (stream Slice) {}
   rpc ReadGlobal(ReadGlobalRequest) returns (ReadGlobalReply) {}
-  rpc Ping (PingRequest) returns (PingReply) {
-  };
-  rpc GetStreams(GetStreamsRequest) returns (GetStreamsReply) {
-  }
+  rpc Ping (PingRequest) returns (PingReply) {}
+  rpc GetStreams(GetStreamsRequest) returns (GetStreamsReply) {}
 }
 
 message DeleteMessageRequest{

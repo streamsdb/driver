@@ -3,7 +3,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Client;
-using StreamsDB.Client;
+using StreamsDB.Driver;
 
 namespace Example
 {
@@ -11,11 +11,11 @@ namespace Example
     {
         static void Main(string[] args)
         {
-            var conn = Connection.Open("sdb://sdb-01.streamsdb.io:443/default");
-            var db = conn.DB();
+            var client = new StreamsDBClient("sdb://admin:Dotnet%23156230@sdb-01.streamsdb.io:443/default");
+            var db = client.DB();
             var streamName = "chat";
 
-            // read user input and append it to the stream
+            // read from stdin and write to stream
             var input = Task.Run(async () =>
             {
                 Console.WriteLine("enter a message an press [enter]");
@@ -38,6 +38,7 @@ namespace Example
                 }
             });
 
+            // subscribe to stream and print messages
             var read = Task.Run(async () =>
             {
                 try

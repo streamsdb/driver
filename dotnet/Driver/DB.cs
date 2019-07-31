@@ -4,22 +4,21 @@ using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Grpc.Core;
-using StreamsDB.Wire;
+using StreamsDB.Driver.Wire;
+using static StreamsDB.Driver.Wire.Streams;
 using Message = Client.Message;
 using MessageInput = Client.MessageInput;
 using Slice = Client.Slice;
-using WireClient = StreamsDB.Wire.Streams.StreamsClient;
-using WireMessageInput = StreamsDB.Wire.MessageInput;
 
-namespace StreamsDB.Client
+namespace StreamsDB.Driver
 {
     public class DB
     {
-        private readonly WireClient _client;
+        private readonly StreamsClient _client;
         private readonly string _db;
         private readonly Metadata _metadata = Metadata.Empty;
 
-        public DB(WireClient client, string db, Metadata metadata)
+        internal DB(StreamsClient client, string db, Metadata metadata)
         {
             _client = client;
             _db = db;
@@ -43,7 +42,7 @@ namespace StreamsDB.Client
                     throw new ArgumentNullException(nameof(m.Type), "missing type name");
                 }
                 
-                request.Messages.Add(new WireMessageInput
+                request.Messages.Add(new Wire.MessageInput
                 {
                     Type = m.Type,
                     Header = ByteString.CopyFrom(m.Header ?? new byte[0]),

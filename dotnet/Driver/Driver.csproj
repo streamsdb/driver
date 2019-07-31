@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>StreamsDB.Driver</RootNamespace>
+    <AssemblyName>StreamsDB.Driver</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AssemblyTitle>StreamsDB.Driver</AssemblyTitle>
+    <Description>StreamsDB .NET driver</Description>
+    <Company>StreamsDB</Company>
+    <Copyright>Copyright © StreamsDB. All rights reserved.</Copyright>
+    <Product>StreamsDB.Driver</Product>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>The client driver for StreamsDB.
+      StreamsDB is a modern stream database for advanced stream processing and event sourcing systems. 
+      
+      See: https://streamsdb.io</Description>
+    <Authors>StreamsDB</Authors>
+    <DebugType>portable</DebugType>
+    <AssemblyName>StreamsDB.Driver</AssemblyName>
+    <PackageId>StreamsDB.Driver</PackageId>
+    <PackageTags>streamsdb;client;driver;eventstore;netstandard2.0</PackageTags>
+    <PackageIconUrl>https://streamsdb.io/img/logo.png</PackageIconUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/streams/driver</RepositoryUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Google.Api.CommonProtos" Version="1.7.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.9" />
+    <PackageReference Include="Grpc" Version="1.17.0" />
+    <PackageReference Include="Grpc.Tools" Version="1.17.0" PrivateAssets="All" />
+  </ItemGroup>
+ <ItemGroup>
+  <Protobuf Include="./Wire/api.proto" Access="internal" GrpcServices="client" />
+</ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Reactive" Version="4.1.5" />
+  </ItemGroup>
+</Project>

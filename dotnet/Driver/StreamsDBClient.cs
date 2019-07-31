@@ -1,26 +1,19 @@
 ﻿using System;
 using System.Web;
 using Grpc.Core;
-using StreamsDB.Wire;
-using WireClient = StreamsDB.Wire.Streams.StreamsClient;
+using StreamsDB.Driver.Wire;
+using static StreamsDB.Driver.Wire.Streams;
 
-namespace StreamsDB.Client
+namespace StreamsDB.Driver
 {
-    public class Connection
+    public class StreamsDBClient
     {
         private readonly Channel _channel;
-        private readonly WireClient _client;
+        private readonly StreamsClient _client;
         private volatile string _db;
         private readonly Metadata _metadata = new Metadata();
 
-        private Connection(Channel channel, WireClient client, string defaultDb = null)
-        {
-            _channel = channel;
-            _client = client;
-            _db = defaultDb;
-        }
-
-        public static Connection Open(string connectionString = null)
+        public StreamsDBClient(string connectionString = null)
         {
             if (string.IsNullOrEmpty(connectionString)) {
               connectionString = Environment.GetEnvironmentVariable("SDB_HOST");
@@ -47,24 +40,25 @@ namespace StreamsDB.Client
             }
 
             var channel = new Channel(uri.Host, uri.Port, cred);
-            var client = new WireClient(channel);
+            var apiClient = new StreamsClient(channel);
             String defaultDb = null;
             if (!string.IsNullOrEmpty(uri.AbsolutePath))
             {
                 defaultDb = uri.AbsolutePath.Trim('/');
             }
             
-            var conn = new Connection(channel, client, defaultDb);
+            _channel = channel;
+            _client = apiClient;
+            _db = defaultDb;
+
             if(!string.IsNullOrEmpty(uri.UserInfo))
             {
                 var items = uri.UserInfo.Split(new char[] {':'});
-                var username = items[0];
-                var password = items[1];
+                var username = HttpUtility.UrlDecode(items[0]);
+                var password = HttpUtility.UrlDecode(items[1]);
 
-                conn.Login(username, password);
+                this.Login(username, password);
             }
-            
-            return conn;
         }
 
         public void Login(string username, string password)

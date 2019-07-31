@@ -4,14 +4,14 @@ using System.Threading.Tasks;
 using Client;
 using Grpc.Core;
 
-namespace StreamsDB.Client
+namespace StreamsDB.Driver
 {
     internal struct PipeSliceEnumerator : IAsyncEnumerable<Slice>, IAsyncEnumerator<Slice>
     {
         private readonly string _streamId;
-        private readonly IAsyncStreamReader<StreamsDB.Wire.Slice> _source;
+        private readonly IAsyncStreamReader<StreamsDB.Driver.Wire.Slice> _source;
 
-        public PipeSliceEnumerator(string streamId, IAsyncStreamReader<StreamsDB.Wire.Slice> source)
+        public PipeSliceEnumerator(string streamId, IAsyncStreamReader<StreamsDB.Driver.Wire.Slice> source)
         {
             _streamId = streamId;
             _source = source;
