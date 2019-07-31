@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Grpc.Core;
+using StreamsDB.Driver.Expectations;
 using StreamsDB.Driver.Wire;
 using static StreamsDB.Driver.Wire.Streams;
 using Message = Client.Message;
@@ -12,6 +13,12 @@ using Slice = Client.Slice;
 
 namespace StreamsDB.Driver
 {
+ 
+    public static class Expect {
+        public static StreamStateExpectation Any() => new ExpectedVersion(-2);
+        public static StreamStateExpectation HeadAt(long head) => new ExpectedVersion(head);
+    }
+
     public class DB
     {
         private readonly StreamsClient _client;
@@ -25,7 +32,9 @@ namespace StreamsDB.Driver
             _metadata = metadata;
         }
 
-        public async Task<long> Append(string streamId, params MessageInput[] messages)
+        public async Task<long> AppendStream(string streamId, params MessageInput[] messages) => await AppendStream(streamId, Expect.Any(), messages);
+
+        public async Task<long> AppendStream(string streamId, StreamStateExpectation expectation, params MessageInput[] messages)
         {
             var request = new AppendStreamRequest
             {
@@ -54,7 +63,7 @@ namespace StreamsDB.Driver
             return reply.From;
         }
 
-        public IAsyncEnumerable<Slice> Subscribe(string streamId, long from, int count,
+        public IAsyncEnumerable<Slice> SubscribeStream(string streamId, long from, int count,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             var watch = _client.SubscribeStream(new SubscribeStreamRequest
@@ -68,9 +77,9 @@ namespace StreamsDB.Driver
             return new PipeSliceEnumerator(streamId, watch.ResponseStream);
         }
 
-        public async Task<Slice> ReadForward(string streamId, long from, int limit) => await read(streamId, from, false, limit);
+        public async Task<Slice> ReadStreamForward(string streamId, long from, int limit) => await read(streamId, from, false, limit);
 
-        public async Task<Slice> ReadBackward(string streamId, long from, int limit) => await read(streamId, from, true, limit);
+        public async Task<Slice> ReadStreamBackward(string streamId, long from, int limit) => await read(streamId, from, true, limit);
 
         private async Task<Slice> read(string streamId, long from, bool reverse, int limit)
         {

@@ -25,7 +25,7 @@ namespace Example
                     try
                     {
                         var line = Console.ReadLine();
-                        await db.Append(streamName, new MessageInput
+                        await db.AppendStream(streamName, new MessageInput
                         {
                             Type = "UTF8String",
                             Value = Encoding.UTF8.GetBytes(line)
@@ -43,7 +43,7 @@ namespace Example
             {
                 try
                 {
-                    var slices = db.Subscribe(streamName, -1, 10);
+                    var slices = db.SubscribeStream(streamName, -1, 10);
                     var enumerator = slices.GetEnumerator();
 
                     while (await enumerator.MoveNext(CancellationToken.None))
