@@ -51,7 +51,6 @@ namespace StreamsDB.Driver
             }
 
             var reply = await _client.AppendStreamAsync(request, _metadata);
-
             return reply.From;
         }
 

@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Description>The client driver for StreamsDB.
+    <Description>The .NET client driver for StreamsDB.
 StreamsDB is a modern stream database for advanced stream processing and event sourcing systems. 
       
 See: https://streamsdb.io</Description>
