@@ -5,15 +5,14 @@ using System.Threading.Tasks;
 using Client;
 using StreamsDB.Driver;
 
-namespace Example
+namespace StreamsDB.Example
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            var client = new StreamsDBClient("sdb://admin:Dotnet%23156230@sdb-01.streamsdb.io:443/default");
+            var client = await StreamsDBClient.Connect();
             var db = client.DB();
-            var streamName = "chat";
 
             // read from stdin and write to stream
             var input = Task.Run(async () =>
@@ -25,9 +24,9 @@ namespace Example
                     try
                     {
                         var line = Console.ReadLine();
-                        await db.AppendStream(streamName, new MessageInput
+                        await db.AppendStream("chat", new MessageInput
                         {
-                            Type = "UTF8String",
+                            Type = "string",
                             Value = Encoding.UTF8.GetBytes(line)
                         });
                     }
@@ -43,13 +42,12 @@ namespace Example
             {
                 try
                 {
-                    var slices = db.SubscribeStream(streamName, -1, 10);
-                    var enumerator = slices.GetEnumerator();
-
-                    while (await enumerator.MoveNext(CancellationToken.None))
+                    using(var subscription = db.SubscribeStream("chat", -1, 10))
                     {
-                        foreach (var message in enumerator.Current.Messages)
+                        while (await subscription.MoveNext(CancellationToken.None))
                         {
+                            var message = subscription.Current;
+
                             var text = Encoding.UTF8.GetString(message.Value);
                             Console.WriteLine("received: " + text);
                         }

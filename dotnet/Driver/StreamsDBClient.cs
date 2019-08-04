@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Web;
 using Grpc.Core;
 using StreamsDB.Driver.Wire;
@@ -13,8 +14,15 @@ namespace StreamsDB.Driver
         private volatile string _db;
         private readonly Metadata _metadata = new Metadata();
 
-        public StreamsDBClient(string connectionString = null)
-        {
+        private Task _loginTask = Task.CompletedTask;
+
+        private StreamsDBClient(Channel channel, StreamsClient apiClient, string defaultDb = null) {
+            _channel = channel;
+            _client = apiClient;
+            _db = defaultDb;
+        }
+
+        public static async Task<StreamsDBClient> Connect(string connectionString = null) {
             if (string.IsNullOrEmpty(connectionString)) {
               connectionString = Environment.GetEnvironmentVariable("SDB_HOST");
             }
@@ -41,15 +49,14 @@ namespace StreamsDB.Driver
 
             var channel = new Channel(uri.Host, uri.Port, cred);
             var apiClient = new StreamsClient(channel);
+
             String defaultDb = null;
             if (!string.IsNullOrEmpty(uri.AbsolutePath))
             {
                 defaultDb = uri.AbsolutePath.Trim('/');
             }
-            
-            _channel = channel;
-            _client = apiClient;
-            _db = defaultDb;
+
+            var sdbClient = new StreamsDBClient(channel, apiClient, defaultDb);
 
             if(!string.IsNullOrEmpty(uri.UserInfo))
             {
@@ -57,14 +64,25 @@ namespace StreamsDB.Driver
                 var username = HttpUtility.UrlDecode(items[0]);
                 var password = HttpUtility.UrlDecode(items[1]);
 
-                this.Login(username, password);
+                await sdbClient.Login(username, password);
             }
+
+            return sdbClient;
         }
 
-        public void Login(string username, string password)
+        public async Task Login(string username, string password)
         {
-            var reply = _client.Login(new LoginRequest {Username = username, Password = password,});
-            _metadata.Add("token", reply.Token);
+            try{
+                var reply = await _client.LoginAsync(new LoginRequest {Username = username, Password = password,});
+                _metadata.Add("token", reply.Token);
+            }
+            catch(Exception caught) {
+                var (converted, ok) = ExceptionConverter.Convert(caught);
+                if(ok) {
+                    throw converted;
+                }
+                throw;
+            }
         }
 
         public DB DB(string db = null)

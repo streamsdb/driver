@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Client;
@@ -6,58 +8,56 @@ using Grpc.Core;
 
 namespace StreamsDB.Driver
 {
-    internal struct PipeSliceEnumerator : IAsyncEnumerable<Slice>, IAsyncEnumerator<Slice>
+    internal class StreamSubscription : IAsyncEnumerator<Message>
     {
         private readonly string _streamId;
         private readonly IAsyncStreamReader<StreamsDB.Driver.Wire.Slice> _source;
 
-        public PipeSliceEnumerator(string streamId, IAsyncStreamReader<StreamsDB.Driver.Wire.Slice> source)
+        private IEnumerator<Message> _currentEnumerator = Enumerable.Empty<Message>().GetEnumerator();
+
+        private Message _currentValue;
+
+        private int _currentIndex = -1;
+
+        public StreamSubscription(string streamId, IAsyncStreamReader<StreamsDB.Driver.Wire.Slice> source)
         {
             _streamId = streamId;
             _source = source;
         }
 
-        public Task<bool> MoveNext(CancellationToken cancellationToken) => _source.MoveNext(cancellationToken);
-
-        public Slice Current
-        {
-            get
-            {
-                var reply = _source.Current;
-                var messages = new Message[reply.Messages.Count];
-                for (var i = 0; i < reply.Messages.Count; i++)
+        public async Task<bool> MoveNext(CancellationToken cancellationToken) {
+            if(!_currentEnumerator.MoveNext()) {
+                // loop till we have no empty slice
+                while(true)
                 {
-                    var am = reply.Messages[i];
+                    if(!await _source.MoveNext(cancellationToken)) {
+                        return false;
+                    }
 
-                    messages[i] = new Message
-                    {
-                        Type = am.Type,
-                        Timestamp = am.Timestamp.ToDateTime(),
-                        Header = am.Header.ToByteArray(),
-                        Value = am.Value.ToByteArray(),
-                    };
+                    var slice = _source.Current;
+                    if(slice.Messages.Count == 0) {
+                        continue;
+                    }
+
+                    _currentEnumerator = _source.Current.Messages.Select(m => new Message{
+                        Position = m.Position,
+                        Type = m.Type,
+                        Timestamp = m.Timestamp.ToDateTime(),
+                        Header = m.Header.ToByteArray(),
+                        Value = m.Value.ToByteArray(),
+                    }).GetEnumerator();
+
+                    return await MoveNext(cancellationToken);
                 }
-
-                return new Slice
-                {
-                    Stream = _streamId,
-                    From = reply.From,
-                    HasNext = reply.HasNext,
-                    Head = reply.Head,
-                    Next = reply.Next,
-                    Messages = messages,
-                };
             }
+            return true;
         }
+
+        public Message Current => _currentEnumerator.Current;
 
         public void Dispose()
         {
             _source.Dispose();
-        }
-
-        public IAsyncEnumerator<Slice> GetEnumerator()
-        {
-            return this;
         }
     }
 }

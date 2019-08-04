@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Grpc.Core;
-using StreamsDB.Driver.Expectations;
 using StreamsDB.Driver.Wire;
 using static StreamsDB.Driver.Wire.Streams;
 using Message = Client.Message;
@@ -13,10 +12,32 @@ using Slice = Client.Slice;
 
 namespace StreamsDB.Driver
 {
- 
-    public static class Expect {
-        public static StreamStateExpectation Any() => new ExpectedVersion(-2);
-        public static StreamStateExpectation HeadAt(long head) => new ExpectedVersion(head);
+    public abstract class ConcurrencyCheck{
+        internal abstract void InterceptRequest(Wire.AppendStreamRequest request);
+
+        public static ConcurrencyCheck Skip() => new ExpectedVersion(-2);
+
+        public static ConcurrencyCheck ExpectVersion(long version) => new ExpectedVersion(version);
+
+        public static ConcurrencyCheck ExpectLastMessage(Client.Message message) => new ExpectedVersion(message.Position);
+    }
+
+    internal class ExpectedVersion : ConcurrencyCheck {
+        private readonly long _version;
+
+        public ExpectedVersion(long version){
+            _version = version;
+        }
+
+        public long ToVersionIdentifier()
+        {
+            return _version;
+        }
+
+        internal override void InterceptRequest(AppendStreamRequest request)
+        {
+            request.ExpectedVersion = _version;
+        }
     }
 
     public class DB
@@ -32,9 +53,50 @@ namespace StreamsDB.Driver
             _metadata = metadata;
         }
 
-        public async Task<long> AppendStream(string streamId, params MessageInput[] messages) => await AppendStream(streamId, Expect.Any(), messages);
+        /// <summary>
+        /// AppendStream appends the provides messages to the specified stream.
+        /// </summary>
+        /// <param name="streamId">The stream to append to. If the stream does not exists, it will be created.</param>
+        /// <param name="messages">The messages to append.</param>
+        /// <returns>The position in the stream of the first message that has been written.</returns>
+        public async Task<long> AppendStream(string streamId, IEnumerable<MessageInput> messages) => await AppendStream(streamId, ConcurrencyCheck.Skip(), messages);
 
-        public async Task<long> AppendStream(string streamId, StreamStateExpectation expectation, params MessageInput[] messages)
+        /// <summary>
+        /// AppendStream appends the provides messages to the specified stream.
+        /// </summary>
+        /// <param name="streamId">The stream to append to. If the stream does not exists, it will be created.</param>
+        /// <param name="messages">The messages to append.</param>
+        /// <returns>The position in the stream of the first message that has been written.</returns>
+        public async Task<long> AppendStream(string streamId, params MessageInput[] messages) => await AppendStream(streamId, ConcurrencyCheck.Skip(), messages);
+
+        public async Task<(Client.Message, bool)> ReadMessageFromStream(string streamId, long position) {
+            try
+            {
+                var slice =  await ReadStreamForward(streamId, position, 1);
+                if(slice.Messages.Length == 0) {
+                    return (default(Message), false);
+                }
+
+                return (slice.Messages[0], true);
+            } catch(RpcException caught) {
+                if(caught.Status.Detail == "stream does not exist") {
+                    return (default(Message), false);
+                }
+
+                throw caught;
+            }
+        }
+        public async Task<long> AppendStream(string streamId, ConcurrencyCheck guard, params MessageInput[] messages) => await AppendStream(streamId, guard, (IEnumerable<MessageInput>)messages);
+
+        /// <summary>
+        /// AppendStream appends the provides messages to the specified stream.
+        /// </summary>
+        /// <param name="streamId">The stream to append to. If the stream does not exists, it will be created.</param>
+        /// <param name="expectation">The stream state expection for optimistic concurrency. Use <c>Expect.Nothing()</c> or <c>Expect.HeadAt()</c>.</param>
+        /// <param name="messages">The messages to append.</param>
+        /// <returns>The position in the stream of the first message that has been written.</returns>
+        /// 
+        public async Task<long> AppendStream(string streamId, ConcurrencyCheck guard, IEnumerable<MessageInput> messages)
         {
             var request = new AppendStreamRequest
             {
@@ -42,7 +104,8 @@ namespace StreamsDB.Driver
                 Stream = streamId,
                 ExpectedVersion = -2,
             };
-            
+
+            guard.InterceptRequest(request);
 
             foreach(var m in messages)
             {
@@ -63,7 +126,7 @@ namespace StreamsDB.Driver
             return reply.From;
         }
 
-        public IAsyncEnumerable<Slice> SubscribeStream(string streamId, long from, int count,
+        public IAsyncEnumerator<Message> SubscribeStream(string streamId, long from, int count,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             var watch = _client.SubscribeStream(new SubscribeStreamRequest
@@ -74,7 +137,7 @@ namespace StreamsDB.Driver
                 Count = (uint) count,
             },_metadata, cancellationToken: cancellationToken);
 
-            return new PipeSliceEnumerator(streamId, watch.ResponseStream);
+            return new StreamSubscription(streamId, watch.ResponseStream);
         }
 
         public async Task<Slice> ReadStreamForward(string streamId, long from, int limit) => await read(streamId, from, false, limit);
