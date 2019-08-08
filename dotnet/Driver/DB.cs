@@ -6,20 +6,97 @@ using Google.Protobuf;
 using Grpc.Core;
 using StreamsDB.Driver.Wire;
 using static StreamsDB.Driver.Wire.Streams;
-using Message = Client.Message;
-using MessageInput = Client.MessageInput;
-using Slice = Client.Slice;
 
 namespace StreamsDB.Driver
 {
+    /// <summary>
+    /// IStreamSubscription represents a subscription to a stream that can be used
+    /// to get current and future messages from a stream.
+    /// <seealso cref="DB.SubscribeStream" />
+    /// </summary>
+    public interface IStreamSubscription : IAsyncEnumerator<Message>{}
+
+    /// <summary>
+    /// ConcurrencyCheck specifies the optimistic concurrency check that needs to succeed before
+    /// a write transaction gets committed. If the check reveals conflicting modifications, the
+    /// write transaction is aborted.
+    /// 
+    /// Use <see cref="Skip" /> to disable the optimistic concurrency check, or use one of the other
+    /// static methods of this class to specify a check.
+    /// </summary>
+    /// <example>
+    /// Here is an example that writes a strict monotonically increasing number to a stream. 
+    /// Because of the <see cref="ConcurrencyCheck.ExpectStreamLastMessage" /> this 
+    /// example could be run concurrently and the numbers on the steam will still be monotonicly increasing:
+    /// <code>
+    /// int nextNumber;
+    /// ConcurrencyCheck check;
+    /// 
+    /// while (true) {
+    ///   // read the last message from the stream
+    ///   var (message, found) = await db.ReadMessageFromStream("exact-sequence", -1);
+    /// 
+    ///   if (found)
+    ///   {
+    ///     // get the number from the value of the last message and increase
+    ///     nextNumber = BitConverter.ToInt32(message.Value) + 1;
+    /// 
+    ///     // expect the message we read to be the last message on the stream
+    ///     check = ConcurrencyCheck.ExpectLastMessage(message);
+    ///   }
+    ///   else
+    ///   {
+    ///     nextNumber = 0;
+    ///     check = ConcurrencyCheck.ExpectVersion(0);
+    ///   }
+    /// 
+    ///   try {
+    ///     await db.AppendStream("exact-sequence", check, new MessageInput
+    ///     {
+    ///       Type = "int32",
+    ///       Value = BitConverter.GetBytes(nextNumber)
+    ///     });
+    ///   } catch(OperationAbortedException caught) {
+    ///     // The operation was aborted, typically due to
+    ///     // a concurrency issue such as a concurrency check failure.
+    ///     continue;
+    ///   }
+    /// }
+    /// </code>
+    /// </example>
     public abstract class ConcurrencyCheck{
         internal abstract void InterceptRequest(Wire.AppendStreamRequest request);
 
+        /// <summary>
+        /// Skip returns an optimistic concurrency check that will always succeed. In other words, the optimistic
+        /// concurrency control will be disabled for the write transaction where this check is used.
+        /// </summary>
+        /// <returns>An optimistic concurrency control check that will always succeed.</returns>
         public static ConcurrencyCheck Skip() => new ExpectedVersion(-2);
 
-        public static ConcurrencyCheck ExpectVersion(long version) => new ExpectedVersion(version);
+        /// <summary>
+        /// ExpectStreamNotExists returns an optimistic concurrency check that will only succeed if the stream does not
+        /// exist.
+        /// </summary>
+        /// <returns>An optimistic concurrency control check that will only succeed if the stream does not exist.</returns>
+        public static ConcurrencyCheck ExpectStreamNotExists() => new ExpectedVersion(0);
 
-        public static ConcurrencyCheck ExpectLastMessage(Client.Message message) => new ExpectedVersion(message.Position);
+        /// <summary>
+        /// Expect the stream to have the specified version.
+        /// </summary>
+        /// <param name="version">The expected version of the stream.</param>
+        /// <returns>An optimistic concurrency control check that will only succeed if the stream has the specified version.</returns>
+        public static ConcurrencyCheck ExpectStreamVersion(long version) => new ExpectedVersion(version);
+
+        /// <summary>
+        /// Expect the stream to have the version that is equal to the position of the specified messaage.
+        /// </summary>
+        /// <remarks>
+        /// It's important to understand that only the position will be verfied, not the actual value of the message nor it's ID or headers.
+        /// </remarks>
+        /// <param name="message">The message to use in the check.</param>
+        /// <returns>An optimistic concurrency control check that will only succeed if the stream version is equal to the position of the specified message.</returns>
+        public static ConcurrencyCheck ExpectStreamLastMessage(Message message) => new ExpectedVersion(message.Position);
     }
 
     internal class ExpectedVersion : ConcurrencyCheck {
@@ -40,6 +117,9 @@ namespace StreamsDB.Driver
         }
     }
 
+    /// <summary>
+    /// DB represents a database in StreamsDB.
+    /// </summary>
     public class DB
     {
         private readonly StreamsClient _client;
@@ -69,7 +149,19 @@ namespace StreamsDB.Driver
         /// <returns>The position in the stream of the first message that has been written.</returns>
         public async Task<long> AppendStream(string streamId, params MessageInput[] messages) => await AppendStream(streamId, ConcurrencyCheck.Skip(), messages);
 
-        public async Task<(Client.Message, bool)> ReadMessageFromStream(string streamId, long position) {
+        /// <summary>
+        /// ReadLastMessageFromStream returns the last message of a stream.
+        /// </summary>
+        /// <returns>A tuple containing the message and a boolean indication whether the message was found or not.</returns>
+        public async Task<(Message, bool)> ReadLastMessageFromStream(string streamId) {
+            return await ReadMessageFromStream(streamId, -1);
+        }
+
+        /// <summary>
+        /// ReadMessageFromStream returns the message from the stream at the specified position.
+        /// </summary>
+        /// <returns>A tuple containing the message and a boolean indication whether the message was found or not.</returns>
+        public async Task<(Message, bool)> ReadMessageFromStream(string streamId, long position) {
             try
             {
                 var slice =  await ReadStreamForward(streamId, position, 1);
@@ -86,17 +178,25 @@ namespace StreamsDB.Driver
                 throw caught;
             }
         }
-        public async Task<long> AppendStream(string streamId, ConcurrencyCheck guard, params MessageInput[] messages) => await AppendStream(streamId, guard, (IEnumerable<MessageInput>)messages);
+
 
         /// <summary>
         /// AppendStream appends the provides messages to the specified stream.
         /// </summary>
         /// <param name="streamId">The stream to append to. If the stream does not exists, it will be created.</param>
-        /// <param name="expectation">The stream state expection for optimistic concurrency. Use <c>Expect.Nothing()</c> or <c>Expect.HeadAt()</c>.</param>
+        /// <param name="concurrencyCheck">The optimistic concurrency check. See <see cref="ConcurrencyCheck"/> for different options.</param>
+        /// <param name="messages">The messages to append.</param>
+        /// <returns>The position in the stream of the first message that has been written.</returns>        
+        public async Task<long> AppendStream(string streamId, ConcurrencyCheck concurrencyCheck, params MessageInput[] messages) => await AppendStream(streamId, concurrencyCheck, (IEnumerable<MessageInput>)messages);
+
+        /// <summary>
+        /// AppendStream appends the provides messages to the specified stream.
+        /// </summary>
+        /// <param name="streamId">The stream to append to. If the stream does not exists, it will be created.</param>
+        /// <param name="concurrencyCheck">The optimistic concurrency check. See <see cref="ConcurrencyCheck"/> for different options.</param>
         /// <param name="messages">The messages to append.</param>
         /// <returns>The position in the stream of the first message that has been written.</returns>
-        /// 
-        public async Task<long> AppendStream(string streamId, ConcurrencyCheck guard, IEnumerable<MessageInput> messages)
+        public async Task<long> AppendStream(string streamId, ConcurrencyCheck concurrencyCheck, IEnumerable<MessageInput> messages)
         {
             var request = new AppendStreamRequest
             {
@@ -105,7 +205,7 @@ namespace StreamsDB.Driver
                 ExpectedVersion = -2,
             };
 
-            guard.InterceptRequest(request);
+            concurrencyCheck.InterceptRequest(request);
 
             foreach(var m in messages)
             {
@@ -126,23 +226,43 @@ namespace StreamsDB.Driver
             return reply.From;
         }
 
-        public IAsyncEnumerator<Message> SubscribeStream(string streamId, long from, int count,
-            CancellationToken cancellationToken = default(CancellationToken))
+        /// <summary>
+        /// SubscribeStream creates a stream subscription that allows you to read from a stream and receive future writes.
+        /// </summary>
+        /// <param name="streamId">The stream to subscribe to.</param>
+        /// <param name="from">The position to subscribe from.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the subscription.</param>
+        /// <returns>A stream subscription.</returns>
+        public IStreamSubscription SubscribeStream(string streamId, long from, CancellationToken cancellationToken = default(CancellationToken))
         {
             var watch = _client.SubscribeStream(new SubscribeStreamRequest
             {
                 Database = _db,
                 Stream = streamId,
                 From = from,
-                Count = (uint) count,
+                Count = (uint) 10, // TODO: allow specification of slice size
             },_metadata, cancellationToken: cancellationToken);
 
             return new StreamSubscription(streamId, watch.ResponseStream);
         }
 
-        public async Task<Slice> ReadStreamForward(string streamId, long from, int limit) => await read(streamId, from, false, limit);
+        /// <summary>
+        /// ReadStreamForward reads from a stream in the forward direction, in other words, reading from older to newer messages in a stream.
+        /// </summary>
+        /// <param name="streamId">The stream to read from.</param>
+        /// <param name="from">The position to read from.</param>
+        /// <param name="limit">The maximum number of messages to read.</param>
+        /// <returns>A stream slice.</returns>
+        public async Task<IStreamSlice> ReadStreamForward(string streamId, long from, int limit) => await read(streamId, from, false, limit);
 
-        public async Task<Slice> ReadStreamBackward(string streamId, long from, int limit) => await read(streamId, from, true, limit);
+        /// <summary>
+        /// ReadStreamBackward reads from a stream in the backward direction, in other words, reading from newer to older messages in the stream.
+        /// </summary>
+        /// <param name="streamId">The stream to read from.</param>
+        /// <param name="from">The position to read from.</param>
+        /// <param name="limit">The maximum number of messages to read.</param>
+        /// <returns>A stream slice.</returns>
+        public async Task<IStreamSlice> ReadStreamBackward(string streamId, long from, int limit) => await read(streamId, from, true, limit);
 
         private async Task<Slice> read(string streamId, long from, bool reverse, int limit)
         {

@@ -1,7 +1,10 @@
 ﻿using System;
 
-namespace Client
+namespace StreamsDB.Driver
 {
+    /// <summary>
+    /// Represents a message on a stream.
+    /// </summary>
     public class Message
     {
         /// <summary>

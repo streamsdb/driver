@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Client;
 using Grpc.Core;
 
 namespace StreamsDB.Driver
 {
-    internal class StreamSubscription : IAsyncEnumerator<Message>
+    internal class StreamSubscription : IStreamSubscription
     {
         private readonly string _streamId;
         private readonly IAsyncStreamReader<StreamsDB.Driver.Wire.Slice> _source;

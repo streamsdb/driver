@@ -7,6 +7,9 @@ using static StreamsDB.Driver.Wire.Streams;
 
 namespace StreamsDB.Driver
 {
+    /// <summary>
+    /// Represents a client connection to a StreamsDB server.
+    /// </summary>
     public class StreamsDBClient
     {
         private readonly Channel _channel;
@@ -22,6 +25,11 @@ namespace StreamsDB.Driver
             _db = defaultDb;
         }
 
+        /// <summary>
+        /// Connect to a StreamsDB server.
+        /// </summary>
+        /// <param name="connectionString">The connection string that helps</param>
+        /// <returns></returns>
         public static async Task<StreamsDBClient> Connect(string connectionString = null) {
             if (string.IsNullOrEmpty(connectionString)) {
               connectionString = Environment.GetEnvironmentVariable("SDB_HOST");
@@ -69,8 +77,7 @@ namespace StreamsDB.Driver
 
             return sdbClient;
         }
-
-        public async Task Login(string username, string password)
+        private async Task Login(string username, string password)
         {
             try{
                 var reply = await _client.LoginAsync(new LoginRequest {Username = username, Password = password,});
@@ -85,6 +92,11 @@ namespace StreamsDB.Driver
             }
         }
 
+        /// <summary>
+        /// Get a handle to a database in StreamsDB.
+        /// </summary>
+        /// <param name="db">The name of the database, leave empty to use the name from the connection string of the <see cref="StreamsDBClient" />.</param>
+        /// <returns>A handle to the database.</returns>
         public DB DB(string db = null)
         {
             if (string.IsNullOrEmpty(db))
