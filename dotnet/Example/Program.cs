@@ -2,7 +2,6 @@
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Client;
 using StreamsDB.Driver;
 
 namespace StreamsDB.Example
@@ -42,7 +41,7 @@ namespace StreamsDB.Example
             {
                 try
                 {
-                    using(var subscription = db.SubscribeStream("chat", -1, 10))
+                    using(var subscription = db.SubscribeStream("chat", -1))
                     {
                         while (await subscription.MoveNext(CancellationToken.None))
                         {
