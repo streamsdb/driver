@@ -180,7 +180,7 @@ func MustOpenDefault() Client {
 }
 
 func OpenDefault() (Client, error) {
-	connString := "sdb://localhost:6000/default?insecure=1&block=1"
+	connString := "sdb://localhost:6000/default?insecure=1"
 	if sdbHost := os.Getenv("SDB_HOST"); len(sdbHost) > 0 {
 		connString = sdbHost
 	}
@@ -228,12 +228,11 @@ func Open(connectionString string) (Client, error) {
 
 	if u.Query().Get("insecure") == "1" {
 		opts = append(opts, grpc.WithInsecure())
+	} else {
+		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
 	}
 	if u.Query().Get("gzip") == "1" {
 		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)))
-	}
-	if u.Query().Get("tls") == "1" {
-		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
 	}
 
 	conn, err := grpc.Dial(u.Host, opts...)
