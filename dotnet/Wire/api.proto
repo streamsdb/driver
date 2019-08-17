@@ -1,0 +1,219 @@
+// Copyright 2015 gRPC authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+package streamsdb.api;
+import "google/protobuf/timestamp.proto";
+option go_package = "api";
+option csharp_namespace = "StreamsDB.Wire";
+
+service Streams {
+  rpc GetDatabases(GetDatabasesRequest) returns (GetDatabasesReply) {
+  }
+  rpc GetDatabase(GetDatabaseRequest) returns (GetDatabaseReply) {
+  }
+  rpc Login(LoginRequest) returns (LoginReply);
+  rpc EnableAcl(EnableAclRequest) returns (EnableAclReply) {}
+  rpc GrandUserToDatabase(GrandUserToDatabaseRequest) returns (GrandUserToDatabaseReply){}
+  rpc CreateUser(CreateUserRequest) returns (CreateUserReply){}
+  rpc CreateDatabase(CreateDatabaseRequest) returns (CreateDatabaseReply) {}
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordReply) {}
+  rpc ReadStream (ReadStreamRequest) returns (Slice) {
+  }
+  rpc AppendStream (AppendStreamRequest) returns (AppendStreamReply) {}
+  rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageReply) {}
+  rpc DeleteStream(DeleteStreamRequest) returns (DeleteStreamReply) {}
+  rpc SubscribeStream (SubscribeStreamRequest) returns (stream Slice) {}
+  rpc ReadGlobal(ReadGlobalRequest) returns (ReadGlobalReply) {}
+  rpc Ping (PingRequest) returns (PingReply) {
+  };
+  rpc GetStreams(GetStreamsRequest) returns (GetStreamsReply) {
+  }
+}
+
+message ChangePasswordRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message ChangePasswordReply{}
+
+message DeleteStreamRequest {
+  string database = 1;
+  string stream = 2;
+  int64 expectedVersion = 3;
+}
+
+message DeleteStreamReply {
+}
+
+message DeleteMessageRequest{
+  string database = 1;
+  string stream = 2;
+  int64 position = 3;
+}
+
+message DeleteMessageReply {
+}
+
+message ReadGlobalRequest {
+  string database = 1;
+  bytes from = 2;
+  int32 limit = 3;
+}
+
+message ReadGlobalReply {
+  string database = 1;
+  bytes from = 2;
+  bytes next = 3;
+  repeated string values = 4;
+}
+
+message GetStreamsRequest {
+  string database = 1;
+  string cursor = 2;
+  Direction direction = 3;
+}
+
+message GetStreamsReply {
+  int64 total = 1;
+  string cursor = 2;
+  Direction direction= 3;
+  bool hasBefore = 4;
+  bool hasAfter = 5;
+  string beforeCursor = 6;
+  string afterCursor = 7;
+  repeated string result=8;
+}
+
+message PingRequest {
+}
+
+message PingReply {
+}
+
+message GetDatabasesRequest {
+}
+
+message GetDatabasesReply{
+  repeated string databases = 1;
+}
+
+
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginReply {
+  string token = 1;
+}
+
+message EnableAclRequest{
+  string username = 1;
+  string password = 2;
+  bytes signature = 3;
+}
+
+message GetDatabaseRequest{
+  string name = 1;
+}
+
+message GetDatabaseReply{
+  string name = 1;
+}
+
+message EnableAclReply{
+}
+
+message GrandUserToDatabaseRequest {
+  string username = 1;
+  string database = 2;
+}
+
+message GrandUserToDatabaseReply{
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message CreateUserReply {
+}
+
+message CreateDatabaseRequest {
+  string name = 1;
+}
+
+message CreateDatabaseReply {
+}
+
+message SubscribeStreamRequest {
+  string database = 1;
+  string stream = 2;
+  int64 from = 3;
+  uint32 count = 4;
+}
+
+enum Direction {
+  FORWARD = 0;
+  BACKWARD = 1;
+}
+
+// The request message containing the user's name.
+message ReadStreamRequest {
+  string database = 1;
+  string stream = 2;
+  int64 from = 3;
+  uint32 limit = 4;
+  bool reverse = 5;
+}
+
+message Message {
+  int64 position = 1;
+  string type = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  bytes header = 4;
+  bytes value = 5;
+}
+
+message Slice {
+  string stream = 1;
+  int64 from = 2;
+  int32 count = 3;
+  int64 next = 4;
+  bool hasNext = 5;
+  int64 head = 6;
+  repeated Message messages = 7;
+  bool reverse = 8;
+}
+
+message MessageInput {
+  string id = 1;
+  string type = 2;
+  bytes header = 3;
+  bytes value = 4;
+}
+
+message AppendStreamRequest {
+  string database = 1;
+  string stream = 2;
+  repeated MessageInput messages = 3;
+  int64 expectedVersion = 4;
+}
+
+message AppendStreamReply {
+  int64 from = 1;
+}

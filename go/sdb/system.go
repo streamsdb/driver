@@ -10,8 +10,18 @@ type System interface {
 	EnableAcl(username string, password string) error
 	CreateUser(username string, password string) error
 	CreateDatabase(name string) (DB, error)
+	ChangePassword(username string, password string) error
 	GrandUserToDatabase(username string, database string) error
 	ReadGlobal(from []byte, limit int) (GlobalSlice, error)
+}
+
+func (this *grpcClient) ChangePassword(username string, password string) error {
+	_, err := this.client.ChangePassword(this.ctx, &api.ChangePasswordRequest{
+		Username: username,
+		Password: password,
+	})
+
+	return err
 }
 
 func (this *grpcClient) ReadGlobal(from []byte, limit int) (GlobalSlice, error) {
