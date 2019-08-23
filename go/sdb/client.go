@@ -406,6 +406,7 @@ func (this *collectionScope) read(stream string, from int64, reverse bool, limit
 		Next:     slice.Next,
 		HasNext:  slice.HasNext,
 		Head:     slice.Head,
+		Reverse:  slice.Reverse,
 		Messages: messages,
 	}, nil
 }
