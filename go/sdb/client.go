@@ -80,6 +80,7 @@ type DB interface {
 	DeleteMessage(stream string, at int64) error
 	ReadStreamForward(stream string, from int64, limit int) (Slice, error)
 	ReadStreamBackward(stream string, from int64, limit int) (Slice, error)
+	ReadGlobal(from []byte, limit int) (GlobalSlice, error)
 	ListStreamsAfter(page *StreamPage) (StreamPage, error)
 	ListStreamsBefore(page *StreamPage) (StreamPage, error)
 }
