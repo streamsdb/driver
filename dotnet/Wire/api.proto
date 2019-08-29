@@ -76,7 +76,7 @@ message ReadGlobalReply {
   string database = 1;
   bytes from = 2;
   bytes next = 3;
-  repeated string values = 4;
+  repeated Message messages = 4;
 }
 
 message GetStreamsRequest {
@@ -182,6 +182,7 @@ message ReadStreamRequest {
 }
 
 message Message {
+  string stream = 6;
   int64 position = 1;
   string type = 2;
   google.protobuf.Timestamp timestamp = 3;
