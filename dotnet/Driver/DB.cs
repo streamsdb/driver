@@ -133,6 +133,37 @@ namespace StreamsDB.Driver
             _metadata = metadata;
         }
 
+        public async Task<IGlobalSlice> ReadGlobalForward(string offset, int limit) {
+            var reply = await _client.ReadGlobalAsync(new ReadGlobalRequest
+            {
+                Database = _db,
+                From = ByteString.CopyFrom(Convert.FromBase64String(offset)),
+                Limit = limit,
+            }, _metadata);
+
+            var messages = new Message[reply.Messages.Count];
+            for (int i = 0; i < reply.Messages.Count; i++)
+            {
+                var am = reply.Messages[i];
+
+                messages[i] = new Message
+                {
+                    Position = am.Position,
+                    Type = am.Type,
+                    Timestamp = am.Timestamp.ToDateTime(),
+                    Header = am.Header.ToByteArray(),
+                    Value = am.Value.ToByteArray(),
+                };
+            }
+
+            return new GlobalSlice
+            {
+                From = reply.From.ToBase64(),
+                Next = reply.Next.ToBase64(),
+                Messages = messages,
+            };
+        }
+
         /// <summary>
         /// AppendStream appends the provides messages to the specified stream.
         /// </summary>

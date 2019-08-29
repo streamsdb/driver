@@ -1,5 +1,20 @@
 ﻿namespace StreamsDB.Driver
 {
+    public interface IGlobalSlice {
+        string From {get;}
+
+        string Next {get;}
+
+        Message[] Messages {get;}
+    }
+
+    public class GlobalSlice : IGlobalSlice {
+        public string From {get; set;}
+        public string Next {get; set;}
+
+        public Message[] Messages {get;set;}
+    }
+
     /// <summary>
     /// Represents a slice of a stream that hold messages from a certain position in a stream.
     /// </summary>

@@ -14,7 +14,6 @@
 syntax = "proto3";
 package streamsdb.api;
 import "google/protobuf/timestamp.proto";
-
 option go_package = "api";
 option csharp_namespace = "StreamsDB.Driver.Wire";
 
@@ -28,14 +27,34 @@ service Streams {
   rpc GrandUserToDatabase(GrandUserToDatabaseRequest) returns (GrandUserToDatabaseReply){}
   rpc CreateUser(CreateUserRequest) returns (CreateUserReply){}
   rpc CreateDatabase(CreateDatabaseRequest) returns (CreateDatabaseReply) {}
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordReply) {}
   rpc ReadStream (ReadStreamRequest) returns (Slice) {
   }
   rpc AppendStream (AppendStreamRequest) returns (AppendStreamReply) {}
   rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageReply) {}
+  rpc DeleteStream(DeleteStreamRequest) returns (DeleteStreamReply) {}
   rpc SubscribeStream (SubscribeStreamRequest) returns (stream Slice) {}
   rpc ReadGlobal(ReadGlobalRequest) returns (ReadGlobalReply) {}
-  rpc Ping (PingRequest) returns (PingReply) {}
-  rpc GetStreams(GetStreamsRequest) returns (GetStreamsReply) {}
+  rpc Ping (PingRequest) returns (PingReply) {
+  };
+  rpc GetStreams(GetStreamsRequest) returns (GetStreamsReply) {
+  }
+}
+
+message ChangePasswordRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message ChangePasswordReply{}
+
+message DeleteStreamRequest {
+  string database = 1;
+  string stream = 2;
+  int64 expectedVersion = 3;
+}
+
+message DeleteStreamReply {
 }
 
 message DeleteMessageRequest{
@@ -57,7 +76,7 @@ message ReadGlobalReply {
   string database = 1;
   bytes from = 2;
   bytes next = 3;
-  repeated string values = 4;
+  repeated Message messages = 4;
 }
 
 message GetStreamsRequest {
@@ -163,6 +182,7 @@ message ReadStreamRequest {
 }
 
 message Message {
+  string stream = 6;
   int64 position = 1;
   string type = 2;
   google.protobuf.Timestamp timestamp = 3;
