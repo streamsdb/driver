@@ -309,7 +309,7 @@ type GlobalSlice struct {
 	Database string
 	From     []byte
 	Next     []byte
-	Values   []string
+	Messages []Message
 }
 
 func (this *collectionScope) ReadGlobal(from []byte, limit int) (GlobalSlice, error) {
@@ -322,10 +322,23 @@ func (this *collectionScope) ReadGlobal(from []byte, limit int) (GlobalSlice, er
 		return GlobalSlice{}, err
 	}
 
+	messages := make([]Message, len(reply.Messages))
+
+	for i, m := range reply.Messages {
+		timestamp, _ := types.TimestampFromProto(m.Timestamp)
+
+		messages[i] = Message{
+			Position:  m.Position,
+			Type:      m.Type,
+			Timestamp: timestamp,
+			Header:    m.Header,
+			Value:     m.Value}
+	}
+
 	return GlobalSlice{
-		From:   reply.From,
-		Next:   reply.Next,
-		Values: reply.Values,
+		From:     reply.From,
+		Next:     reply.Next,
+		Messages: messages,
 	}, nil
 }
 
