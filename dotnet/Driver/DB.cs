@@ -137,7 +137,7 @@ namespace StreamsDB.Driver
             var reply = await _client.ReadGlobalAsync(new ReadGlobalRequest
             {
                 Database = _db,
-                From = ByteString.CopyFrom(Convert.FromBase64String(offset)),
+                From = ByteString.FromBase64(offset),
                 Limit = limit,
             }, _metadata);
 
