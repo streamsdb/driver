@@ -1,16 +1,16 @@
 ﻿namespace StreamsDB.Driver
 {
     public interface IGlobalSlice {
-        string From {get;}
+        GlobalPosition From {get;}
 
-        string Next {get;}
+        GlobalPosition Next {get;}
 
         Message[] Messages {get;}
     }
 
     public class GlobalSlice : IGlobalSlice {
-        public string From {get; set;}
-        public string Next {get; set;}
+        public GlobalPosition From {get; set;}
+        public GlobalPosition Next {get; set;}
 
         public Message[] Messages {get;set;}
     }

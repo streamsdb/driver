@@ -10,6 +10,48 @@ using static StreamsDB.Driver.Wire.Streams;
 namespace StreamsDB.Driver
 {
     /// <summary>
+    /// Represents a position on the global stream.
+    /// </summary>
+    public class GlobalPosition {
+        /// <summary>
+        /// Represents the first position of the global stream.
+        /// </summary>
+        public static readonly GlobalPosition Begin = new GlobalPosition(ByteString.Empty);
+
+        internal readonly ByteString Value;
+
+        public override string ToString() {
+            return Value.ToBase64();
+        }
+
+        internal GlobalPosition(ByteString value) {
+            Value = value;
+        }
+
+        public GlobalPosition Parse(string value) {
+            return new GlobalPosition(ByteString.FromBase64(value));
+        }
+
+        public bool Equals(GlobalPosition other) {
+            return Value.Equals(other.Value);
+        }
+
+        public bool TryParse(string value, out GlobalPosition result) {
+            ByteString bytes;
+
+            try{
+                bytes = ByteString.FromBase64(value);
+            } catch(FormatException) {
+                result = null;
+                return false;
+            }
+            
+            result = new GlobalPosition(bytes);
+            return true;
+        }
+    }
+
+    /// <summary>
     /// IStreamSubscription represents a subscription to a stream that can be used
     /// to get current and future messages from a stream.
     /// <seealso cref="DB.SubscribeStream" />
@@ -133,11 +175,11 @@ namespace StreamsDB.Driver
             _metadata = metadata;
         }
 
-        public async Task<IGlobalSlice> ReadGlobalForward(string offset, int limit) {
+        public async Task<IGlobalSlice> ReadGlobalForward(GlobalPosition from, int limit) {
             var reply = await _client.ReadGlobalAsync(new ReadGlobalRequest
             {
                 Database = _db,
-                From = ByteString.FromBase64(offset),
+                From = from.Value,
                 Limit = limit,
             }, _metadata);
 
@@ -159,8 +201,8 @@ namespace StreamsDB.Driver
 
             return new GlobalSlice
             {
-                From = reply.From.ToBase64(),
-                Next = reply.Next.ToBase64(),
+                From = new GlobalPosition(reply.From),
+                Next = new GlobalPosition(reply.Next),
                 Messages = messages,
             };
         }
