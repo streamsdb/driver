@@ -6,6 +6,8 @@
         GlobalPosition Next {get;}
 
         Message[] Messages {get;}
+
+        bool HasNext {get;}
     }
 
     public class GlobalSlice : IGlobalSlice {
@@ -13,6 +15,14 @@
         public GlobalPosition Next {get; set;}
 
         public Message[] Messages {get;set;}
+
+        public bool HasNext 
+        {
+            get
+            {
+                return !From.Equals(Next);
+            }
+        }
     }
 
     /// <summary>
