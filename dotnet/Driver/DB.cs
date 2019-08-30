@@ -28,7 +28,7 @@ namespace StreamsDB.Driver
             Value = value;
         }
 
-        public GlobalPosition Parse(string value) {
+        public static GlobalPosition Parse(string value) {
             return new GlobalPosition(ByteString.FromBase64(value));
         }
 
@@ -36,7 +36,7 @@ namespace StreamsDB.Driver
             return Value.Equals(other.Value);
         }
 
-        public bool TryParse(string value, out GlobalPosition result) {
+        public static bool TryParse(string value, out GlobalPosition result) {
             ByteString bytes;
 
             try{
