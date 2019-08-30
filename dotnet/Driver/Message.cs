@@ -8,6 +8,12 @@ namespace StreamsDB.Driver
     public class Message
     {
         /// <summary>
+        /// The name of the stream containing this message.
+        /// </summary>
+        /// <value></value>
+        public string Stream { get; set; }
+
+        /// <summary>
 		/// The position of this message in the stream.
 		/// </summary>
         public long Position {get; set; }

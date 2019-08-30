@@ -148,6 +148,7 @@ namespace StreamsDB.Driver
 
                 messages[i] = new Message
                 {
+                    Stream = am.Stream,
                     Position = am.Position,
                     Type = am.Type,
                     Timestamp = am.Timestamp.ToDateTime(),
@@ -313,6 +314,7 @@ namespace StreamsDB.Driver
 
                 messages[i] = new Message
                 {
+                    Stream = am.Stream,
                     Position = am.Position,
                     Type = am.Type,
                     Timestamp = am.Timestamp.ToDateTime(),
