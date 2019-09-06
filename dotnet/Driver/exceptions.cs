@@ -78,6 +78,8 @@ namespace StreamsDB.Driver
         {
             switch (ex)
             {
+                case AggregateException caught:
+                    return Convert(ex.InnerException);
                 case RpcException e:
                     switch (e.Status.StatusCode)
                     {
