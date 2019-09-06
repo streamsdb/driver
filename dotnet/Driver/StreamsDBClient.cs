@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using System.Web;
 using Grpc.Core;
+using Grpc.Core.Interceptors;
 using StreamsDB.Driver.Wire;
 using static StreamsDB.Driver.Wire.Streams;
 
@@ -19,7 +20,8 @@ namespace StreamsDB.Driver
 
         private Task _loginTask = Task.CompletedTask;
 
-        private StreamsDBClient(Channel channel, StreamsClient apiClient, string defaultDb = null) {
+        private StreamsDBClient(Channel channel, StreamsClient apiClient, string defaultDb = null)
+        {
             _channel = channel;
             _client = apiClient;
             _db = defaultDb;
@@ -30,20 +32,23 @@ namespace StreamsDB.Driver
         /// </summary>
         /// <param name="connectionString">The connection string that helps</param>
         /// <returns></returns>
-        public static async Task<StreamsDBClient> Connect(string connectionString = null) {
-            if (string.IsNullOrEmpty(connectionString)) {
-              connectionString = Environment.GetEnvironmentVariable("SDB_HOST");
+        public static async Task<StreamsDBClient> Connect(string connectionString = null)
+        {
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                connectionString = Environment.GetEnvironmentVariable("SDB_HOST");
             }
 
-            if (string.IsNullOrEmpty(connectionString)) {
-              throw new ArgumentNullException(nameof(connectionString), "connection string not specified and SDB_HOST environment variable is empty");
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new ArgumentNullException(nameof(connectionString), "connection string not specified and SDB_HOST environment variable is empty");
             }
-            
+
             if (!connectionString.StartsWith("sdb://"))
             {
                 throw new ArgumentOutOfRangeException(nameof(connectionString), "invalid streamsdb connection string: not starting with 'sdb://'");
             }
-            
+
             var uri = new Uri(connectionString);
 
             var options = HttpUtility.ParseQueryString(uri.Query);
@@ -56,7 +61,7 @@ namespace StreamsDB.Driver
             }
 
             var channel = new Channel(uri.Host, uri.Port, cred);
-            var apiClient = new StreamsClient(channel);
+            var apiClient = new StreamsClient(channel.Intercept(new ExceptionInterceptor()));
 
             String defaultDb = null;
             if (!string.IsNullOrEmpty(uri.AbsolutePath))
@@ -66,9 +71,9 @@ namespace StreamsDB.Driver
 
             var sdbClient = new StreamsDBClient(channel, apiClient, defaultDb);
 
-            if(!string.IsNullOrEmpty(uri.UserInfo))
+            if (!string.IsNullOrEmpty(uri.UserInfo))
             {
-                var items = uri.UserInfo.Split(new char[] {':'});
+                var items = uri.UserInfo.Split(new char[] { ':' });
                 var username = HttpUtility.UrlDecode(items[0]);
                 var password = HttpUtility.UrlDecode(items[1]);
 
@@ -79,17 +84,8 @@ namespace StreamsDB.Driver
         }
         private async Task Login(string username, string password)
         {
-            try{
-                var reply = await _client.LoginAsync(new LoginRequest {Username = username, Password = password,});
-                _metadata.Add("token", reply.Token);
-            }
-            catch(Exception caught) {
-                var (converted, ok) = ExceptionConverter.Convert(caught);
-                if(ok) {
-                    throw converted;
-                }
-                throw;
-            }
+            var reply = await _client.LoginAsync(new LoginRequest { Username = username, Password = password, });
+            _metadata.Add("token", reply.Token);
         }
 
         /// <summary>

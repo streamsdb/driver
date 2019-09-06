@@ -1,8 +1,67 @@
 using System;
+using System.Threading.Tasks;
 using Grpc.Core;
+using Grpc.Core.Interceptors;
 
 namespace StreamsDB.Driver
 {
+    internal class ExceptionInterceptor : Interceptor {
+        public override TResponse BlockingUnaryCall<TRequest, TResponse>(TRequest request, ClientInterceptorContext<TRequest, TResponse> context, BlockingUnaryCallContinuation<TRequest, TResponse> continuation)
+        {
+            try{
+                return continuation(request,context);
+            }
+            catch(Exception caugth){
+                var (converted, ok) = ExceptionConverter.Convert(caugth);
+                if(!ok){
+                    throw;
+                }
+                throw converted;
+            }
+        }
+
+        public override AsyncUnaryCall<TResponse> AsyncUnaryCall<TRequest, TResponse>(TRequest request, ClientInterceptorContext<TRequest, TResponse> context, AsyncUnaryCallContinuation<TRequest, TResponse> continuation)
+        {
+            try{
+                return continuation(request,context);
+            }
+            catch(Exception caugth){
+                var (converted, ok) = ExceptionConverter.Convert(caugth);
+                if(!ok){
+                    throw;
+                }
+                throw converted;
+            }
+        }
+
+        public override AsyncClientStreamingCall<TRequest, TResponse> AsyncClientStreamingCall<TRequest, TResponse>(ClientInterceptorContext<TRequest, TResponse> context, AsyncClientStreamingCallContinuation<TRequest, TResponse> continuation)
+        {
+               try{
+                return continuation(context);
+            }
+            catch(Exception caugth){
+                var (converted, ok) = ExceptionConverter.Convert(caugth);
+                if(!ok){
+                    throw;
+                }
+                throw converted;
+            }
+        }
+
+        public override AsyncDuplexStreamingCall<TRequest, TResponse> AsyncDuplexStreamingCall<TRequest, TResponse>(ClientInterceptorContext<TRequest, TResponse> context, AsyncDuplexStreamingCallContinuation<TRequest, TResponse> continuation)
+        {
+              try{
+                return continuation(context);
+            }
+            catch(Exception caugth){
+                var (converted, ok) = ExceptionConverter.Convert(caugth);
+                if(!ok){
+                    throw;
+                }
+                throw converted;
+            }
+        }
+    }
         internal static class ExceptionConverter {
         public static (Exception, bool) Convert(Exception ex) {
             switch (ex) {
