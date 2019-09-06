@@ -5,15 +5,19 @@ using Grpc.Core.Interceptors;
 
 namespace StreamsDB.Driver
 {
-    internal class ExceptionInterceptor : Interceptor {
+    internal class ExceptionInterceptor : Interceptor
+    {
         public override TResponse BlockingUnaryCall<TRequest, TResponse>(TRequest request, ClientInterceptorContext<TRequest, TResponse> context, BlockingUnaryCallContinuation<TRequest, TResponse> continuation)
         {
-            try{
-                return continuation(request,context);
+            try
+            {
+                return continuation(request, context);
             }
-            catch(Exception caugth){
+            catch (Exception caugth)
+            {
                 var (converted, ok) = ExceptionConverter.Convert(caugth);
-                if(!ok){
+                if (!ok)
+                {
                     throw;
                 }
                 throw converted;
@@ -22,51 +26,61 @@ namespace StreamsDB.Driver
 
         public override AsyncUnaryCall<TResponse> AsyncUnaryCall<TRequest, TResponse>(TRequest request, ClientInterceptorContext<TRequest, TResponse> context, AsyncUnaryCallContinuation<TRequest, TResponse> continuation)
         {
-            try{
-                return continuation(request,context);
-            }
-            catch(Exception caugth){
-                var (converted, ok) = ExceptionConverter.Convert(caugth);
-                if(!ok){
-                    throw;
+            var responseCnt = continuation(request, context);
+            var responseAsync = responseCnt.ResponseAsync.ContinueWith(responseTask =>
+            {
+                try
+                {
+                    return responseTask.Result;
                 }
-                throw converted;
-            }
+                catch (Exception caugth)
+                {
+                    var (converted, ok) = ExceptionConverter.Convert(caugth);
+                    if (!ok)
+                    {
+                        throw;
+                    }
+                    throw converted;
+                }
+            });
+
+
+            return new AsyncUnaryCall<TResponse>(responseAsync, responseCnt.ResponseHeadersAsync, responseCnt.GetStatus, responseCnt.GetTrailers, responseCnt.Dispose);
         }
 
         public override AsyncClientStreamingCall<TRequest, TResponse> AsyncClientStreamingCall<TRequest, TResponse>(ClientInterceptorContext<TRequest, TResponse> context, AsyncClientStreamingCallContinuation<TRequest, TResponse> continuation)
         {
-               try{
-                return continuation(context);
-            }
-            catch(Exception caugth){
-                var (converted, ok) = ExceptionConverter.Convert(caugth);
-                if(!ok){
-                    throw;
+            var responseCnt = continuation(context);
+            var responseAsync = responseCnt.ResponseAsync.ContinueWith(responseTask =>
+            {
+                try
+                {
+                    return responseTask.Result;
                 }
-                throw converted;
-            }
-        }
+                catch (Exception caugth)
+                {
+                    var (converted, ok) = ExceptionConverter.Convert(caugth);
+                    if (!ok)
+                    {
+                        throw;
+                    }
+                    throw converted;
+                }
+            });
 
-        public override AsyncDuplexStreamingCall<TRequest, TResponse> AsyncDuplexStreamingCall<TRequest, TResponse>(ClientInterceptorContext<TRequest, TResponse> context, AsyncDuplexStreamingCallContinuation<TRequest, TResponse> continuation)
-        {
-              try{
-                return continuation(context);
-            }
-            catch(Exception caugth){
-                var (converted, ok) = ExceptionConverter.Convert(caugth);
-                if(!ok){
-                    throw;
-                }
-                throw converted;
-            }
+
+            return new AsyncClientStreamingCall<TRequest, TResponse>(responseCnt.RequestStream, responseAsync, responseCnt.ResponseHeadersAsync, responseCnt.GetStatus, responseCnt.GetTrailers, responseCnt.Dispose);
         }
     }
-        internal static class ExceptionConverter {
-        public static (Exception, bool) Convert(Exception ex) {
-            switch (ex) {
+    internal static class ExceptionConverter
+    {
+        public static (Exception, bool) Convert(Exception ex)
+        {
+            switch (ex)
+            {
                 case RpcException e:
-                    switch(e.Status.StatusCode) {
+                    switch (e.Status.StatusCode)
+                    {
                         case StatusCode.NotFound:
                             return (new NotFoundException(e.Status.Detail, ex), true);
                         case StatusCode.Aborted:
