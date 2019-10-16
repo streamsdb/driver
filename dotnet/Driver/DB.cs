@@ -253,7 +253,6 @@ namespace StreamsDB.Driver
             }
         }
 
-
         /// <summary>
         /// AppendStream appends the provides messages to the specified stream.
         /// </summary>
@@ -337,6 +336,7 @@ namespace StreamsDB.Driver
         /// <param name="limit">The maximum number of messages to read.</param>
         /// <returns>A stream slice.</returns>
         public async Task<IStreamSlice> ReadStreamBackward(string streamId, long from, int limit) => await read(streamId, from, true, limit);
+
 
         private async Task<Slice> read(string streamId, long from, bool reverse, int limit)
         {
