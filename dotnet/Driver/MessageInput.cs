@@ -1,5 +1,23 @@
-﻿namespace StreamsDB.Driver
+﻿using System.Collections.Generic;
+
+namespace StreamsDB.Driver
 {
+    /// <summary>
+    /// Represents input for a atomic stream write.
+    /// </summary>
+    public class StreamInput {
+      public string Stream{get;}
+      public ConcurrencyCheck ConcurrencyCheck {get;}
+      public IEnumerable<MessageInput> Messages {get;}
+
+      public StreamInput(string stream, ConcurrencyCheck concurrencyCheck, IEnumerable<MessageInput> messages)
+      {
+          Stream = stream;
+          ConcurrencyCheck = concurrencyCheck;
+          Messages = messages;
+      }
+    }
+
     /// <summary>
     /// Represents a message that can be written to a stream.
     /// </summary>

@@ -13,6 +13,7 @@
     <Company>StreamsDB</Company>
     <Copyright>Copyright © StreamsDB. All rights reserved.</Copyright>
     <Product>StreamsDB.Driver</Product>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -40,6 +41,7 @@ See: https://streamsdb.io</Description>
     </PackageReference>
   </ItemGroup>
  <ItemGroup>
+   <!--<Protobuf Include="./Wire/api.proto" Access="internal" GrpcServices="client" />-->
   <Protobuf Include="./Wire/api.proto" Access="internal" GrpcServices="client" />
 </ItemGroup>
   <ItemGroup>

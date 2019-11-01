@@ -299,6 +299,35 @@ namespace StreamsDB.Driver
             return reply.From;
         }
 
+        public async Task AppendStreams(params StreamInput[] inputs)
+        {
+            var request = new AppendStreamsRequest{
+              Database = _db
+            };
+
+            foreach(var input in inputs)
+            {
+              // TODO: add expected version support
+              var wireInput=new Wire.StreamInput{
+                Database =_db,
+                Stream = input.Stream,
+              };
+
+              foreach(var m in input.Messages)
+              {
+                  wireInput.Messages.Add(new Wire.MessageInput
+                  {
+                      Type = m.Type,
+                      Header = ByteString.CopyFrom(m.Header ?? new byte[0]),
+                      Value = ByteString.CopyFrom(m.Value ?? new byte[0]),
+                  });
+              }
+            }
+
+            var reply = await _client.AppendStreamsAsync(request, _metadata);
+            return;
+        }
+
         /// <summary>
         /// SubscribeStream creates a stream subscription that allows you to read from a stream and receive future writes.
         /// </summary>
