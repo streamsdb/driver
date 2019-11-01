@@ -99,7 +99,7 @@ namespace StreamsDB.Driver
             {
                 if (string.IsNullOrEmpty(_db))
                 {
-                    throw new ArgumentNullException(nameof(db));
+                    throw new ArgumentNullException(nameof(db), $"{nameof(db)} argument not set and no database provided via connection string");
                 }
                 db = _db;
             }
