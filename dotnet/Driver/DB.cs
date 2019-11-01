@@ -322,6 +322,8 @@ namespace StreamsDB.Driver
                       Value = ByteString.CopyFrom(m.Value ?? new byte[0]),
                   });
               }
+              
+              request.Inputs.Add(wireInput);
             }
 
             var reply = await _client.AppendStreamsAsync(request, _metadata);
