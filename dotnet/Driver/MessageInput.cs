@@ -6,9 +6,11 @@ namespace StreamsDB.Driver
     /// Represents input for a atomic stream write.
     /// </summary>
     public class StreamInput {
-      public string Stream{get;}
-      public ConcurrencyCheck ConcurrencyCheck {get;}
-      public IEnumerable<MessageInput> Messages {get;}
+      public string Stream{get;set;}
+      public ConcurrencyCheck ConcurrencyCheck {get;set;}
+      public IEnumerable<MessageInput> Messages {get;set;}
+
+      public StreamInput() {}
 
       public StreamInput(string stream, IEnumerable<MessageInput> messages) : this(stream, ConcurrencyCheck.Skip(), messages)
       {}
