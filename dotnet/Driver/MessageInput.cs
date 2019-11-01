@@ -10,6 +10,9 @@ namespace StreamsDB.Driver
       public ConcurrencyCheck ConcurrencyCheck {get;}
       public IEnumerable<MessageInput> Messages {get;}
 
+      public StreamInput(string stream, IEnumerable<MessageInput> messages) : this(stream, ConcurrencyCheck.Skip(), messages)
+      {}
+
       public StreamInput(string stream, ConcurrencyCheck concurrencyCheck, IEnumerable<MessageInput> messages)
       {
           Stream = stream;
