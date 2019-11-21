@@ -117,6 +117,8 @@ type Client interface {
 	// Databases lists all available databases.
 	Databases() ([]string, error)
 
+	CreateDatabase(name string) error
+
 	Close() error
 
 	System() System
@@ -125,6 +127,14 @@ type Client interface {
 	Clone(ctx context.Context) Client
 
 	Ping() error
+}
+
+func (this *grpcClient) CreateDatabase(name string) error {
+	_, err := this.client.CreateDatabase(this.ctx, &api.CreateDatabaseRequest{
+		Name: name,
+	})
+
+	return err
 }
 
 func (this *grpcClient) Ping() error {
