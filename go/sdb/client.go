@@ -78,6 +78,7 @@ type DB interface {
 	AppendStream(stream string, expectedVersion int64, messages ...MessageInput) (int64, error)
 	SubscribeStream(stream string, from int64, limit int) StreamSubscription
 	DeleteMessage(stream string, at int64) error
+	DeleteStream(stream string) error
 	ReadStreamForward(stream string, from int64, limit int) (Slice, error)
 	ReadStreamBackward(stream string, from int64, limit int) (Slice, error)
 	ReadGlobal(from []byte, limit int) (GlobalSlice, error)
@@ -254,6 +255,14 @@ func Open(connectionString string) (Client, error) {
 	}
 
 	return grpcConn, nil
+}
+
+func (this *collectionScope) DeleteStream(stream string) error {
+	_, err := this.client.DeleteStream(this.ctx, &api.DeleteStreamRequest{
+		Database: this.db,
+		Stream:   stream,
+	})
+	return err
 }
 
 func (this *collectionScope) DeleteMessage(stream string, at int64) error {
