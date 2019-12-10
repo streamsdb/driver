@@ -347,7 +347,7 @@ namespace StreamsDB.Driver
                 Count = (uint) 10, // TODO: allow specification of slice size
             },_metadata, cancellationToken: cancellationToken);
 
-            return new StreamSubscription(streamId, watch.ResponseStream);
+            return new StreamSubscription(watch.ResponseStream);
         }
 
         /// <summary>

@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Grpc.Core;
 
@@ -9,27 +7,21 @@ namespace StreamsDB.Driver
 {
     internal class StreamSubscription : IStreamSubscription
     {
-        private readonly string _streamId;
-        private readonly IAsyncStreamReader<StreamsDB.Driver.Wire.Slice> _source;
+        private readonly IAsyncStreamReader<Wire.Slice> _source;
 
         private IEnumerator<Message> _currentEnumerator = Enumerable.Empty<Message>().GetEnumerator();
 
-        private Message _currentValue;
-
-        private int _currentIndex = -1;
-
-        public StreamSubscription(string streamId, IAsyncStreamReader<StreamsDB.Driver.Wire.Slice> source)
+        public StreamSubscription(IAsyncStreamReader<Wire.Slice> source)
         {
-            _streamId = streamId;
             _source = source;
         }
 
-        public async Task<bool> MoveNext(CancellationToken cancellationToken) {
+        public async ValueTask<bool> MoveNextAsync() {
             if(!_currentEnumerator.MoveNext()) {
                 // loop till we have no empty slice
                 while(true)
                 {
-                    if(!await _source.MoveNext(cancellationToken)) {
+                    if(!await _source.MoveNext()) {
                         return false;
                     }
 
@@ -47,17 +39,17 @@ namespace StreamsDB.Driver
                         Value = m.Value.ToByteArray(),
                     }).GetEnumerator();
 
-                    return await MoveNext(cancellationToken);
+                    return await MoveNextAsync();
                 }
             }
             return true;
         }
 
-        public Message Current => _currentEnumerator.Current;
+		public ValueTask DisposeAsync()
+		{
+			return new ValueTask();
+		}
 
-        public void Dispose()
-        {
-            _source.Dispose();
-        }
+		public Message Current => _currentEnumerator.Current;
     }
 }

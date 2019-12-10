@@ -155,7 +155,7 @@
 - [Streams](#T-StreamsDB-Driver-Wire-Streams 'StreamsDB.Driver.Wire.Streams')
   - [Descriptor](#P-StreamsDB-Driver-Wire-Streams-Descriptor 'StreamsDB.Driver.Wire.Streams.Descriptor')
 - [StreamsClient](#T-StreamsDB-Driver-Wire-Streams-StreamsClient 'StreamsDB.Driver.Wire.Streams.StreamsClient')
-  - [#ctor(channel)](#M-StreamsDB-Driver-Wire-Streams-StreamsClient-#ctor-Grpc-Core-Channel- 'StreamsDB.Driver.Wire.Streams.StreamsClient.#ctor(Grpc.Core.Channel)')
+  - [#ctor(channel)](#M-StreamsDB-Driver-Wire-Streams-StreamsClient-#ctor-Grpc-Core-ChannelBase- 'StreamsDB.Driver.Wire.Streams.StreamsClient.#ctor(Grpc.Core.ChannelBase)')
   - [#ctor(callInvoker)](#M-StreamsDB-Driver-Wire-Streams-StreamsClient-#ctor-Grpc-Core-CallInvoker- 'StreamsDB.Driver.Wire.Streams.StreamsClient.#ctor(Grpc.Core.CallInvoker)')
   - [#ctor()](#M-StreamsDB-Driver-Wire-Streams-StreamsClient-#ctor 'StreamsDB.Driver.Wire.Streams.StreamsClient.#ctor')
   - [#ctor(configuration)](#M-StreamsDB-Driver-Wire-Streams-StreamsClient-#ctor-Grpc-Core-ClientBase-ClientBaseConfiguration- 'StreamsDB.Driver.Wire.Streams.StreamsClient.#ctor(Grpc.Core.ClientBase.ClientBaseConfiguration)')
@@ -1470,7 +1470,7 @@ StreamsDB.Driver.Wire.Streams
 
 Client for Streams
 
-<a name='M-StreamsDB-Driver-Wire-Streams-StreamsClient-#ctor-Grpc-Core-Channel-'></a>
+<a name='M-StreamsDB-Driver-Wire-Streams-StreamsClient-#ctor-Grpc-Core-ChannelBase-'></a>
 ### #ctor(channel) `constructor`
 
 ##### Summary
@@ -1481,7 +1481,7 @@ Creates a new client for Streams
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| channel | [Grpc.Core.Channel](#T-Grpc-Core-Channel 'Grpc.Core.Channel') | The channel to use to make remote calls. |
+| channel | [Grpc.Core.ChannelBase](#T-Grpc-Core-ChannelBase 'Grpc.Core.ChannelBase') | The channel to use to make remote calls. |
 
 <a name='M-StreamsDB-Driver-Wire-Streams-StreamsClient-#ctor-Grpc-Core-CallInvoker-'></a>
 ### #ctor(callInvoker) `constructor`
