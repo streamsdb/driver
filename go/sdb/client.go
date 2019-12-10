@@ -70,6 +70,9 @@ type StreamPage struct {
 	Total int
 	Names []string
 
+	Filter string
+	Limit  int
+
 	HasNext   bool
 	HasBefore bool
 }
@@ -78,10 +81,12 @@ type DB interface {
 	AppendStream(stream string, expectedVersion int64, messages ...MessageInput) (int64, error)
 	SubscribeStream(stream string, from int64, limit int) StreamSubscription
 	DeleteMessage(stream string, at int64) error
+	DeleteStream(stream string) error
 	ReadStreamForward(stream string, from int64, limit int) (Slice, error)
 	ReadStreamBackward(stream string, from int64, limit int) (Slice, error)
-	ListStreamsAfter(page *StreamPage) (StreamPage, error)
-	ListStreamsBefore(page *StreamPage) (StreamPage, error)
+	ReadGlobal(from []byte, limit int) (GlobalSlice, error)
+	ListStreamsForward(filter string, after string, limit int) (StreamPage, error)
+	ListStreamsBackward(filter string, after string, limit int) (StreamPage, error)
 }
 
 func (this *grpcClient) Clone(ctx context.Context) Client {
@@ -255,6 +260,14 @@ func Open(connectionString string) (Client, error) {
 	return grpcConn, nil
 }
 
+func (this *collectionScope) DeleteStream(stream string) error {
+	_, err := this.client.DeleteStream(this.ctx, &api.DeleteStreamRequest{
+		Database: this.db,
+		Stream:   stream,
+	})
+	return err
+}
+
 func (this *collectionScope) DeleteMessage(stream string, at int64) error {
 	_, err := this.client.DeleteMessage(this.ctx, &api.DeleteMessageRequest{
 		Database: this.db,
@@ -309,7 +322,7 @@ type GlobalSlice struct {
 	Database string
 	From     []byte
 	Next     []byte
-	Values   []string
+	Messages []Message
 }
 
 func (this *collectionScope) ReadGlobal(from []byte, limit int) (GlobalSlice, error) {
@@ -322,20 +335,34 @@ func (this *collectionScope) ReadGlobal(from []byte, limit int) (GlobalSlice, er
 		return GlobalSlice{}, err
 	}
 
+	messages := make([]Message, len(reply.Messages))
+
+	for i, m := range reply.Messages {
+		timestamp, _ := types.TimestampFromProto(m.Timestamp)
+
+		messages[i] = Message{
+			Position:  m.Position,
+			Type:      m.Type,
+			Timestamp: timestamp,
+			Header:    m.Header,
+			Value:     m.Value}
+	}
+
 	return GlobalSlice{
-		From:   reply.From,
-		Next:   reply.Next,
-		Values: reply.Values,
+		From:     reply.From,
+		Next:     reply.Next,
+		Messages: messages,
 	}, nil
 }
 
-func (this *collectionScope) ListStreamsBefore(page *StreamPage) (StreamPage, error) {
-	var before string
-	if page != nil && len(page.Names) > 0 {
-		before = page.Names[0]
-	}
-
-	result, err := this.client.GetStreams(this.ctx, &api.GetStreamsRequest{Database: this.db, Cursor: before, Direction: api.Direction_BACKWARD})
+func (this *collectionScope) ListStreamsBackward(filter string, before string, limit int) (StreamPage, error) {
+	result, err := this.client.GetStreams(this.ctx, &api.GetStreamsRequest{
+		Database:  this.db,
+		Cursor:    before,
+		Direction: api.Direction_BACKWARD,
+		Filter:    filter,
+		Limit:     int32(limit),
+	})
 	if err != nil {
 		return StreamPage{}, err
 	}
@@ -343,18 +370,21 @@ func (this *collectionScope) ListStreamsBefore(page *StreamPage) (StreamPage, er
 	return StreamPage{
 		Total:     int(result.Total),
 		Names:     result.Result,
+		Filter:    result.Filter,
+		Limit:     int(result.Limit),
 		HasNext:   result.HasAfter,
-		HasBefore: result.HasBefore, // TODO: fix naming
+		HasBefore: result.HasBefore,
 	}, nil
 }
 
-func (this *collectionScope) ListStreamsAfter(page *StreamPage) (StreamPage, error) {
-	var after string
-	if page != nil && len(page.Names) > 0 {
-		after = page.Names[len(page.Names)-1]
-	}
-
-	result, err := this.client.GetStreams(this.ctx, &api.GetStreamsRequest{Database: this.db, Cursor: after, Direction: api.Direction_FORWARD})
+func (this *collectionScope) ListStreamsForward(filter string, after string, limit int) (StreamPage, error) {
+	result, err := this.client.GetStreams(this.ctx, &api.GetStreamsRequest{
+		Database:  this.db,
+		Cursor:    after,
+		Direction: api.Direction_BACKWARD,
+		Filter:    filter,
+		Limit:     int32(limit),
+	})
 	if err != nil {
 		return StreamPage{}, err
 	}
@@ -362,8 +392,10 @@ func (this *collectionScope) ListStreamsAfter(page *StreamPage) (StreamPage, err
 	return StreamPage{
 		Total:     int(result.Total),
 		Names:     result.Result,
+		Filter:    result.Filter,
+		Limit:     int(result.Limit),
 		HasNext:   result.HasAfter,
-		HasBefore: result.HasBefore, // TODO: fix naming
+		HasBefore: result.HasBefore,
 	}, nil
 }
 

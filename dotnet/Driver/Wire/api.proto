@@ -14,7 +14,6 @@
 syntax = "proto3";
 package streamsdb.api;
 import "google/protobuf/timestamp.proto";
-
 option go_package = "api";
 option csharp_namespace = "StreamsDB.Driver.Wire";
 
@@ -28,14 +27,35 @@ service Streams {
   rpc GrandUserToDatabase(GrandUserToDatabaseRequest) returns (GrandUserToDatabaseReply){}
   rpc CreateUser(CreateUserRequest) returns (CreateUserReply){}
   rpc CreateDatabase(CreateDatabaseRequest) returns (CreateDatabaseReply) {}
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordReply) {}
   rpc ReadStream (ReadStreamRequest) returns (Slice) {
   }
   rpc AppendStream (AppendStreamRequest) returns (AppendStreamReply) {}
+  rpc AppendStreams (AppendStreamsRequest) returns (AppendStreamsReply) {}
   rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageReply) {}
+  rpc DeleteStream(DeleteStreamRequest) returns (DeleteStreamReply) {}
   rpc SubscribeStream (SubscribeStreamRequest) returns (stream Slice) {}
   rpc ReadGlobal(ReadGlobalRequest) returns (ReadGlobalReply) {}
-  rpc Ping (PingRequest) returns (PingReply) {}
-  rpc GetStreams(GetStreamsRequest) returns (GetStreamsReply) {}
+  rpc Ping (PingRequest) returns (PingReply) {
+  };
+  rpc GetStreams(GetStreamsRequest) returns (GetStreamsReply) {
+  }
+}
+
+message ChangePasswordRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message ChangePasswordReply{}
+
+message DeleteStreamRequest {
+  string database = 1;
+  string stream = 2;
+  int64 expectedVersion = 3;
+}
+
+message DeleteStreamReply {
 }
 
 message DeleteMessageRequest{
@@ -57,7 +77,8 @@ message ReadGlobalReply {
   string database = 1;
   bytes from = 2;
   bytes next = 3;
-  repeated string values = 4;
+  bool hasNext = 5;
+  repeated Message messages = 4;
 }
 
 message GetStreamsRequest {
@@ -163,6 +184,8 @@ message ReadStreamRequest {
 }
 
 message Message {
+  string id = 7;
+  string stream = 6;
   int64 position = 1;
   string type = 2;
   google.protobuf.Timestamp timestamp = 3;
@@ -188,6 +211,28 @@ message MessageInput {
   bytes value = 4;
 }
 
+message StreamInput {
+  string database = 1;
+  string stream = 2;
+  int64 expectedVersion = 3;
+  repeated MessageInput messages = 4;
+}
+
+message StreamAppendResult {
+  string stream = 1;
+  int64 position = 2;
+  int64 version = 3;
+}
+
+message AppendStreamsRequest {
+  string database = 1;
+  repeated StreamInput inputs = 2;
+}
+
+message AppendStreamsReply {
+  repeated StreamAppendResult results = 1;
+}
+
 message AppendStreamRequest {
   string database = 1;
   string stream = 2;
@@ -197,4 +242,5 @@ message AppendStreamRequest {
 
 message AppendStreamReply {
   int64 from = 1;
+  int64 version = 2;
 }

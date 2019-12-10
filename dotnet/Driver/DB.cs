@@ -10,6 +10,48 @@ using static StreamsDB.Driver.Wire.Streams;
 namespace StreamsDB.Driver
 {
     /// <summary>
+    /// Represents a position on the global stream.
+    /// </summary>
+    public class GlobalPosition {
+        /// <summary>
+        /// Represents the first position of the global stream.
+        /// </summary>
+        public static readonly GlobalPosition Begin = new GlobalPosition(ByteString.Empty);
+
+        internal readonly ByteString Value;
+
+        public override string ToString() {
+            return Value.ToBase64();
+        }
+
+        internal GlobalPosition(ByteString value) {
+            Value = value;
+        }
+
+        public static GlobalPosition Parse(string value) {
+            return new GlobalPosition(ByteString.FromBase64(value));
+        }
+
+        public bool Equals(GlobalPosition other) {
+            return Value.Equals(other.Value);
+        }
+
+        public static bool TryParse(string value, out GlobalPosition result) {
+            ByteString bytes;
+
+            try{
+                bytes = ByteString.FromBase64(value);
+            } catch(FormatException) {
+                result = null;
+                return false;
+            }
+            
+            result = new GlobalPosition(bytes);
+            return true;
+        }
+    }
+
+    /// <summary>
     /// IStreamSubscription represents a subscription to a stream that can be used
     /// to get current and future messages from a stream.
     /// <seealso cref="DB.SubscribeStream" />
@@ -133,6 +175,38 @@ namespace StreamsDB.Driver
             _metadata = metadata;
         }
 
+        public async Task<IGlobalSlice> ReadGlobalForward(GlobalPosition from, int limit) {
+            var reply = await _client.ReadGlobalAsync(new ReadGlobalRequest
+            {
+                Database = _db,
+                From = from.Value,
+                Limit = limit,
+            }, _metadata);
+
+            var messages = new Message[reply.Messages.Count];
+            for (int i = 0; i < reply.Messages.Count; i++)
+            {
+                var am = reply.Messages[i];
+
+                messages[i] = new Message
+                {
+                    Stream = am.Stream,
+                    Position = am.Position,
+                    Type = am.Type,
+                    Timestamp = am.Timestamp.ToDateTime(),
+                    Header = am.Header.ToByteArray(),
+                    Value = am.Value.ToByteArray(),
+                };
+            }
+
+            return new GlobalSlice
+            {
+                From = new GlobalPosition(reply.From),
+                Next = new GlobalPosition(reply.Next),
+                Messages = messages,
+            };
+        }
+
         /// <summary>
         /// AppendStream appends the provides messages to the specified stream.
         /// </summary>
@@ -178,7 +252,6 @@ namespace StreamsDB.Driver
                 throw caught;
             }
         }
-
 
         /// <summary>
         /// AppendStream appends the provides messages to the specified stream.
@@ -226,6 +299,37 @@ namespace StreamsDB.Driver
             return reply.From;
         }
 
+        public async Task AppendStreams(params StreamInput[] inputs)
+        {
+            var request = new AppendStreamsRequest{
+              Database = _db
+            };
+
+            foreach(var input in inputs)
+            {
+              // TODO: add expected version support
+              var wireInput=new Wire.StreamInput{
+                Database =_db,
+                Stream = input.Stream,
+              };
+
+              foreach(var m in input.Messages)
+              {
+                  wireInput.Messages.Add(new Wire.MessageInput
+                  {
+                      Type = m.Type,
+                      Header = ByteString.CopyFrom(m.Header ?? new byte[0]),
+                      Value = ByteString.CopyFrom(m.Value ?? new byte[0]),
+                  });
+              }
+              
+              request.Inputs.Add(wireInput);
+            }
+
+            var reply = await _client.AppendStreamsAsync(request, _metadata);
+            return;
+        }
+
         /// <summary>
         /// SubscribeStream creates a stream subscription that allows you to read from a stream and receive future writes.
         /// </summary>
@@ -264,6 +368,7 @@ namespace StreamsDB.Driver
         /// <returns>A stream slice.</returns>
         public async Task<IStreamSlice> ReadStreamBackward(string streamId, long from, int limit) => await read(streamId, from, true, limit);
 
+
         private async Task<Slice> read(string streamId, long from, bool reverse, int limit)
         {
             var reply = await _client.ReadStreamAsync(new ReadStreamRequest
@@ -282,6 +387,7 @@ namespace StreamsDB.Driver
 
                 messages[i] = new Message
                 {
+                    Stream = am.Stream,
                     Position = am.Position,
                     Type = am.Type,
                     Timestamp = am.Timestamp.ToDateTime(),

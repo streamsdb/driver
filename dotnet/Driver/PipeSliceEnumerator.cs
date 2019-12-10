@@ -39,6 +39,7 @@ namespace StreamsDB.Driver
                     }
 
                     _currentEnumerator = _source.Current.Messages.Select(m => new Message{
+                        Stream = m.Stream,
                         Position = m.Position,
                         Type = m.Type,
                         Timestamp = m.Timestamp.ToDateTime(),
