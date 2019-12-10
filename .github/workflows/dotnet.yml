@@ -12,7 +12,6 @@ jobs:
     - uses: actions/checkout@v1
     - name: Build the Docker image
       run: |
-        docker build . --file Dockerfile --tag streamsdb/dotnet-driver
         pushd dotnet
         docker build --build-arg VERSION="0.9.5-dev" -t streamsdb/dotnet-driver .
         #docker run --rm --name push-packages streamsdb/dotnet-driver --source https://api.nuget.org/v3/index.json --api-key $NUGET_TOKEN
