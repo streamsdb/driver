@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using StreamsDB.Driver;
 
@@ -41,17 +40,16 @@ namespace StreamsDB.Example
             {
                 try
                 {
-                    using(var subscription = db.SubscribeStream("chat", -1))
-                    {
-                        while (await subscription.MoveNext(CancellationToken.None))
-                        {
-                            var message = subscription.Current;
+					await using var subscription = db.SubscribeStream("chat", -1);
 
-                            var text = Encoding.UTF8.GetString(message.Value);
-                            Console.WriteLine("received: " + text);
-                        }
-                    }
-                }
+					while (await subscription.MoveNextAsync())
+					{
+						var message = subscription.Current;
+
+						var text = Encoding.UTF8.GetString(message.Value);
+						Console.WriteLine("received: " + text);
+					}
+				}
                 catch (Exception e)
                 {
                     Console.WriteLine("read error: " + e);

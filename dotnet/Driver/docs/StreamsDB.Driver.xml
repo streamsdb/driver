@@ -592,7 +592,7 @@
         <member name="T:StreamsDB.Driver.Wire.Streams.StreamsClient">
             <summary>Client for Streams</summary>
         </member>
-        <member name="M:StreamsDB.Driver.Wire.Streams.StreamsClient.#ctor(Grpc.Core.Channel)">
+        <member name="M:StreamsDB.Driver.Wire.Streams.StreamsClient.#ctor(Grpc.Core.ChannelBase)">
             <summary>Creates a new client for Streams</summary>
             <param name="channel">The channel to use to make remote calls.</param>
         </member>
