@@ -15,7 +15,7 @@ syntax = "proto3";
 package streamsdb.api;
 import "google/protobuf/timestamp.proto";
 option go_package = "api";
-option csharp_namespace = "StreamsDB.Driver.Wire";
+option csharp_namespace = "StreamsDB.Wire";
 
 service Streams {
   rpc GetDatabases(GetDatabasesRequest) returns (GetDatabasesReply) {
@@ -30,7 +30,7 @@ service Streams {
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordReply) {}
   rpc ReadStream (ReadStreamRequest) returns (Slice) {
   }
-  rpc AppendStream (AppendStreamRequest) returns (AppendStreamReply) {}
+  rpc AppendStream (AppendStreamRequest) returns (StreamAppendResult) {}
   rpc AppendStreams (AppendStreamsRequest) returns (AppendStreamsReply) {}
   rpc DeleteMessage(DeleteMessageRequest) returns (DeleteMessageReply) {}
   rpc DeleteStream(DeleteStreamRequest) returns (DeleteStreamReply) {}
@@ -56,6 +56,7 @@ message DeleteStreamRequest {
 }
 
 message DeleteStreamReply {
+  int64 version = 1;
 }
 
 message DeleteMessageRequest{
@@ -69,13 +70,13 @@ message DeleteMessageReply {
 
 message ReadGlobalRequest {
   string database = 1;
-  bytes from = 2;
+  bytes cursor = 2;
   int32 limit = 3;
 }
 
 message ReadGlobalReply {
   string database = 1;
-  bytes from = 2;
+  bytes cursor = 2;
   bytes next = 3;
   bool hasNext = 5;
   repeated Message messages = 4;
@@ -84,18 +85,22 @@ message ReadGlobalReply {
 message GetStreamsRequest {
   string database = 1;
   string cursor = 2;
-  Direction direction = 3;
+  bool reverse = 3;
+
+  string filter = 4;
+  int32 limit = 5;
 }
 
 message GetStreamsReply {
   int64 total = 1;
   string cursor = 2;
-  Direction direction= 3;
-  bool hasBefore = 4;
-  bool hasAfter = 5;
-  string beforeCursor = 6;
-  string afterCursor = 7;
-  repeated string result=8;
+  bool reverse = 3;
+  bool hasNext = 4;
+  string nextCursor = 5;
+  repeated string result=6;
+
+  string filter = 9;
+  int32 limit = 10;
 }
 
 message PingRequest {
@@ -184,24 +189,24 @@ message ReadStreamRequest {
 }
 
 message Message {
-  string id = 7;
-  string stream = 6;
-  int64 position = 1;
-  string type = 2;
-  google.protobuf.Timestamp timestamp = 3;
-  bytes header = 4;
-  bytes value = 5;
+  string stream = 1;
+  int64 position = 2;
+  string type = 3;
+  google.protobuf.Timestamp timestamp = 4;
+  bytes header = 5;
+  bytes value = 6;
 }
 
 message Slice {
   string stream = 1;
-  int64 from = 2;
-  int32 count = 3;
-  int64 next = 4;
-  bool hasNext = 5;
-  int64 head = 6;
-  repeated Message messages = 7;
-  bool reverse = 8;
+  int64 version = 2;
+  int64 from = 3;
+  int32 count = 4;
+  int64 next = 5;
+  bool hasNext = 6;
+  int64 head = 7;
+  repeated Message messages = 8;
+  bool reverse = 9;
 }
 
 message MessageInput {
@@ -220,13 +225,15 @@ message StreamInput {
 
 message StreamAppendResult {
   string stream = 1;
-  int64 position = 2;
-  int64 version = 3;
+  int64 version = 2;
+  int64 position = 3;
+  int64 head = 4;
 }
 
 message AppendStreamsRequest {
   string database = 1;
   repeated StreamInput inputs = 2;
+  string idempotencyKey = 3;
 }
 
 message AppendStreamsReply {
@@ -238,9 +245,6 @@ message AppendStreamRequest {
   string stream = 2;
   repeated MessageInput messages = 3;
   int64 expectedVersion = 4;
+  string idempotencyKey = 5;
 }
 
-message AppendStreamReply {
-  int64 from = 1;
-  int64 version = 2;
-}

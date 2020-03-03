@@ -73,6 +73,9 @@ type StreamPage struct {
 	Filter string
 	Limit  int
 
+	First string
+	Last  string
+
 	HasNext   bool
 	HasBefore bool
 }
@@ -367,6 +370,14 @@ func (this *collectionScope) ListStreamsBackward(filter string, before string, l
 		return StreamPage{}, err
 	}
 
+	first := ""
+	last := ""
+
+	if len(result.Result) > 0 {
+		first = result.Result[0]
+		last = result.Result[len(result.Result)-1]
+	}
+
 	return StreamPage{
 		Total:     int(result.Total),
 		Names:     result.Result,
@@ -374,6 +385,8 @@ func (this *collectionScope) ListStreamsBackward(filter string, before string, l
 		Limit:     int(result.Limit),
 		HasNext:   result.HasAfter,
 		HasBefore: result.HasBefore,
+		First:     first,
+		Last:      last,
 	}, nil
 }
 
