@@ -18,6 +18,17 @@ func main() {
 	// specify empty string to use the database "example" from the connection string
 	db := conn.DB("")
 
+	if err := db.EnsureExists(); err != nil {
+		println("ensure database exists failed: ", err.Error())
+		return
+	}
+
+	if err := conn.Ping(); err != nil {
+		println("ping failed to StreamsDB: ", err.Error())
+		return
+	}
+	println("ping to success")
+
 	// create a channel to get notified from any errors
 	errs := make(chan error)
 
@@ -27,6 +38,7 @@ func main() {
 
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
+			println(">> appending to stream")
 			_, err := db.AppendStream("inputs", sdb.AnyVersion, sdb.MessageInput{Type: "string", Value: scanner.Bytes()})
 			if err != nil {
 				errs <- errors.Wrap(err, "append error")

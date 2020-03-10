@@ -14,10 +14,12 @@ import (
 	"github.com/streamsdb/driver/go/sdb/internal/api"
 	"google.golang.org/grpc"
 
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 	_ "google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // MessageInput holds the data to be appended to a stream.
@@ -80,6 +82,7 @@ type StreamPage struct {
 }
 
 type DB interface {
+	EnsureExists() error
 	AppendStream(stream string, expectedVersion int64, messages ...MessageInput) (int64, error)
 	SubscribeStream(stream string, from int64, limit int) StreamSubscription
 	DeleteMessage(stream string, at int64) error
@@ -187,7 +190,7 @@ func MustOpenDefault() Client {
 }
 
 func OpenDefault() (Client, error) {
-	connString := "sdb://localhost:6000/default?insecure=1"
+	connString := "sdb://localhost:6000/default?insecure=1&block=1"
 	if sdbHost := os.Getenv("SDB_HOST"); len(sdbHost) > 0 {
 		connString = sdbHost
 	}
@@ -277,6 +280,21 @@ func (this *collectionScope) DeleteMessage(stream string, at int64) error {
 		Position: at,
 	})
 	return err
+}
+
+func (this *collectionScope) EnsureExists() error {
+	_, err := this.client.CreateDatabase(this.ctx, &api.CreateDatabaseRequest{
+		Name: this.db,
+	})
+
+	if err != nil {
+		if st, ok := status.FromError(err); ok && st.Code() == codes.AlreadyExists {
+			return nil
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (this *collectionScope) AppendStream(stream string, expectedVersion int64, messages ...MessageInput) (int64, error) {
