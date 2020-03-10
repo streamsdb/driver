@@ -87,6 +87,7 @@ type DB interface {
 	SubscribeStream(stream string, from int64, limit int) StreamSubscription
 	DeleteMessage(stream string, at int64) error
 	DeleteStream(stream string) error
+	OpenStreamForward(stream string, from int64) MessageIterator
 	ReadStreamForward(stream string, from int64, limit int) (Slice, error)
 	ReadStreamBackward(stream string, from int64, limit int) (Slice, error)
 	ReadGlobal(from []byte, limit int) (GlobalSlice, error)
@@ -425,6 +426,14 @@ func (this *collectionScope) ListStreamsForward(filter string, after string, lim
 		Limit:   int(result.Limit),
 		HasNext: result.HasNext,
 	}, nil
+}
+
+func (this *collectionScope) OpenStreamForward(stream string, from int64) MessageIterator {
+	return (&sliceIterator{
+		from:    from,
+		reverse: false,
+		read:    func(from int64, reverse bool) (Slice, error) { return this.read(stream, from, reverse, 100) },
+	}).Messages()
 }
 
 func (this *collectionScope) ReadStreamForward(stream string, from int64, limit int) (Slice, error) {

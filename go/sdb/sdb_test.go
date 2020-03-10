@@ -45,6 +45,51 @@ func ExampleDB_AppendStream() {
 	// Output: written to stream
 }
 
+func ExampleDB_OpenStreamForward() {
+	client, err := sdb.OpenDefault()
+	if err != nil {
+		log.Fatal("connect error", err)
+	}
+
+	db := client.DB("")
+
+	// append 3 messages to stream
+	_, err = db.AppendStream("example", sdb.AnyVersion, sdb.MessageInput{
+		Type:  "string",
+		Value: []byte("hello"),
+	},
+		sdb.MessageInput{
+			Type:  "string",
+			Value: []byte("world"),
+		},
+		sdb.MessageInput{
+			Type:  "string",
+			Value: []byte("!"),
+		})
+
+	if err != nil {
+		log.Fatal("write error", err)
+	}
+
+	// read the messages from the stream
+	iterator := db.OpenStreamForward("example", 1)
+
+	for iterator.Advance() {
+		message, err := iterator.Get()
+		if err != nil {
+			log.Fatal("read error", err)
+		}
+
+		fmt.Println(string(message.Value))
+	}
+
+	// Output:
+	// hello
+	// world
+	// !
+
+}
+
 func ExampleDB_ReadStreamForward() {
 	client, err := sdb.OpenDefault()
 	if err != nil {
