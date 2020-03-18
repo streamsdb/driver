@@ -17,7 +17,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
-	_ "google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
@@ -39,35 +38,6 @@ type MessageInput struct {
 	Value []byte
 }
 
-// StreamSubscription follows a stream. Use the Slices channel to receive
-// slices containing the messages from the remote stream.
-// The Slices channel will be closed if an error occurs or if the subscription
-// was closed.
-type StreamSubscription struct {
-	cancel context.CancelFunc
-
-	// Slices returns the available messages. Slices is closed if Cancel()
-	// is called; or when an error has accored. Use Err() to get the err
-	// if any.
-	Slices <-chan Slice
-	err    error
-}
-
-// Err returns the reason why Slices was closed, if so.
-// If Slices is not closed, Err returns nil.
-// If this subscription is canceled, Err returns nil.
-func (this *StreamSubscription) Err() error {
-	return this.err
-}
-
-// Close cancels this subscription. The Slices channel will be closed
-// and Err() will return nil.
-//
-// Calling Close on an cancelled or errored subscription will do nothing.
-func (this *StreamSubscription) Close() {
-	this.cancel()
-}
-
 type StreamPage struct {
 	Total int
 	Names []string
@@ -84,10 +54,9 @@ type StreamPage struct {
 type DB interface {
 	EnsureExists() error
 	AppendStream(stream string, expectedVersion int64, messages ...MessageInput) (int64, error)
-	SubscribeStream(stream string, from int64, limit int) StreamSubscription
 	DeleteMessage(stream string, at int64) error
 	DeleteStream(stream string) error
-	OpenStreamForward(stream string, from int64) MessageIterator
+	OpenStreamForward(stream string, options StreamReadOptions) (MessageIterator, error)
 	ReadStreamForward(stream string, from int64, limit int) (Slice, error)
 	ReadStreamBackward(stream string, from int64, limit int) (Slice, error)
 	ReadGlobal(from []byte, limit int) (GlobalSlice, error)
@@ -299,7 +268,7 @@ func (this *collectionScope) EnsureExists() error {
 }
 
 func (this *collectionScope) AppendStream(stream string, expectedVersion int64, messages ...MessageInput) (int64, error) {
-	inputs := make([]*api.MessageInput, len(messages), len(messages))
+	inputs := make([]*api.MessageInput, len(messages))
 
 	for i, m := range messages {
 		inputs[i] = &api.MessageInput{
@@ -424,16 +393,30 @@ func (this *collectionScope) ListStreamsForward(filter string, after string, lim
 		Names:   result.Result,
 		Filter:  result.Filter,
 		Limit:   int(result.Limit),
-		HasNext: result.HasNext,
-	}, nil
+		HasNext: result.HasNext}, nil
 }
 
-func (this *collectionScope) OpenStreamForward(stream string, from int64) MessageIterator {
-	return (&sliceIterator{
-		from:    from,
-		reverse: false,
-		read:    func(from int64, reverse bool) (Slice, error) { return this.read(stream, from, reverse, 100) },
-	}).Messages()
+type StreamReadOptions struct {
+	From     int64
+	Reverse  bool
+	KeepOpen bool
+}
+
+func (this *collectionScope) OpenStreamForward(stream string, options StreamReadOptions) (MessageIterator, error) {
+	ctx, cancel := context.WithCancel(this.ctx)
+
+	subscription, err := this.client.IterateStream(ctx, &api.ReadStreamRequest{
+		Database: this.db,
+		Stream:   stream,
+		From:     options.From,
+	})
+
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+
+	return &messageIterator{cancel: cancel, subscription: subscription}, nil
 }
 
 func (this *collectionScope) ReadStreamForward(stream string, from int64, limit int) (Slice, error) {
@@ -444,44 +427,49 @@ func (this *collectionScope) ReadStreamBackward(stream string, from int64, limit
 }
 
 func (this *collectionScope) read(stream string, from int64, reverse bool, limit int) (Slice, error) {
-	slice, err := this.client.ReadStream(this.ctx, &api.ReadStreamRequest{
-		Database: this.db,
-		Stream:   stream,
-		From:     from,
-		Limit:    uint32(limit),
-		Reverse:  reverse,
-	})
+	return Slice{}, errors.New("not implemented")
 
-	if err != nil {
-		return Slice{}, err
-	}
+	/*
+		slice, err := this.client.ReadStream(this.ctx, &api.ReadStreamRequest{
+			Database: this.db,
+			Stream:   stream,
+			From:     from,
+			Limit:    uint32(limit),
+			Reverse:  reverse,
+		})
 
-	messages := make([]Message, len(slice.Messages), len(slice.Messages))
+		if err != nil {
+			return Slice{}, err
+		}
 
-	for i, m := range slice.Messages {
-		timestamp, _ := types.TimestampFromProto(m.Timestamp)
+		messages := make([]Message, len(slice.Messages), len(slice.Messages))
 
-		messages[i] = Message{
-			Position:  m.Position,
-			Type:      m.Type,
-			Timestamp: timestamp,
-			Header:    m.Header,
-			Value:     m.Value}
-	}
+		for i, m := range slice.Messages {
+			timestamp, _ := types.TimestampFromProto(m.Timestamp)
 
-	return Slice{
-		Stream:   stream,
-		From:     slice.From,
-		Next:     slice.Next,
-		HasNext:  slice.HasNext,
-		Head:     slice.Head,
-		Reverse:  slice.Reverse,
-		Messages: messages,
-	}, nil
+			messages[i] = Message{
+				Position:  m.Position,
+				Type:      m.Type,
+				Timestamp: timestamp,
+				Header:    m.Header,
+				Value:     m.Value}
+		}
+
+		return Slice{
+			Stream:   stream,
+			From:     slice.From,
+			Next:     slice.Next,
+			HasNext:  slice.HasNext,
+			Head:     slice.Head,
+			Reverse:  slice.Reverse,
+			Messages: messages,
+		}, nil
+	*/
 }
 
-func (this *collectionScope) SubscribeStream(stream string, from int64, count int) StreamSubscription {
-	ctx, cancel := context.WithCancel(this.ctx)
+func (this *collectionScope) SubscribeStream(stream string, from int64, count int) SliceIterator {
+	return nil
+	/*ctx, cancel := context.WithCancel(this.ctx)
 	slices := make(chan Slice)
 	result := StreamSubscription{cancel, slices, nil}
 
@@ -490,6 +478,12 @@ func (this *collectionScope) SubscribeStream(stream string, from int64, count in
 		defer cancel()
 
 		subscription, err := this.client.SubscribeStream(ctx, &api.SubscribeStreamRequest{Database: this.db, Stream: stream, From: from, Count: uint32(count)})
+
+		iterator := &sliceIterator{
+		read: func() {
+
+		}
+	}
 		if err != nil {
 			result.err = err
 			return
@@ -534,6 +528,7 @@ func (this *collectionScope) SubscribeStream(stream string, from int64, count in
 	}()
 
 	return result
+	*/
 }
 
 func (this *grpcClient) Close() error {

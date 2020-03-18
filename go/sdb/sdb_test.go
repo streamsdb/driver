@@ -72,7 +72,14 @@ func ExampleDB_OpenStreamForward() {
 	}
 
 	// read the messages from the stream
-	iterator := db.OpenStreamForward("example", 1)
+	iterator, err := db.OpenStreamForward("example", sdb.StreamReadOptions{
+		From: 1,
+	})
+	if err != nil {
+		log.Fatal("open stream error", err)
+	}
+
+	defer iterator.Close()
 
 	for iterator.Advance() {
 		message, err := iterator.Get()
@@ -164,59 +171,4 @@ func ExampleDB_ReadStreamBackward() {
 	// !
 	// world
 	// hello
-}
-
-func ExampleDB_SubscribeStream() {
-	client, err := sdb.OpenDefault()
-	if err != nil {
-		log.Fatal("connect error", err)
-	}
-
-	db := client.DB("")
-
-	// append 3 messages to stream
-	position, err := db.AppendStream("example", sdb.AnyVersion,
-		sdb.MessageInput{Value: []byte("hello")},
-		sdb.MessageInput{Value: []byte("world")},
-		sdb.MessageInput{Value: []byte("!")})
-
-	if err != nil {
-		log.Fatal("write error", err)
-	}
-
-	// read the messages from the stream
-	subscription := db.SubscribeStream("example", position, 10)
-	done := make(chan struct{})
-
-	go func() {
-		defer close(done)
-		defer subscription.Close()
-
-		for slice := range subscription.Slices {
-			for _, message := range slice.Messages {
-				value := string(message.Value)
-				fmt.Println(value)
-
-				if value == "bye" {
-					return
-				}
-			}
-		}
-	}()
-
-	for _, number := range []int{1, 2, 3} {
-		db.AppendStream("example", sdb.AnyVersion, sdb.MessageInput{
-			Value: []byte(fmt.Sprint(number)),
-		})
-	}
-
-	subscription.Close()
-
-	// Output:
-	// hello
-	// world
-	// !
-	// 1
-	// 2
-	// 3
 }

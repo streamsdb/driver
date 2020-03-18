@@ -1,74 +1,72 @@
 package sdb
 
+import (
+	"context"
+	"io"
+
+	"github.com/gogo/protobuf/types"
+	"github.com/streamsdb/driver/go/sdb/internal/api"
+)
+
 type SliceIterator interface {
+	io.Closer
+
 	Advance() bool
-	Get() (Slice, error)
+	Get() (*Slice, error)
 }
 
 type MessageIterator interface {
+	io.Closer
+
 	Advance() bool
 	Get() (Message, error)
 }
 
 type messageIterator struct {
-	done     bool
-	message  Message
-	err      error
-	messages []Message
+	cancel       context.CancelFunc
+	subscription api.Streams_IterateStreamClient
 
-	slices SliceIterator
+	message Message
+	err     error
+}
+
+func (iterator *messageIterator) Close() error {
+	iterator.cancel()
+	return nil
 }
 
 func (iterator *messageIterator) Advance() bool {
-	if iterator.done {
-		return false
-	}
+	m, err := iterator.subscription.Recv()
+	iterator.err = err
 
-	if len(iterator.messages) > 0 {
-		iterator.message = iterator.messages[0]
-		iterator.messages = iterator.messages[1:]
-		return true
-	}
-
-	if !iterator.slices.Advance() {
-		iterator.done = true
-		return false
-	}
-
-	slice, err := iterator.slices.Get()
 	if err != nil {
-		iterator.err = err
+		if err == io.EOF {
+			return false
+		}
 		return true
 	}
 
-	if len(slice.Messages) > 0 {
-		iterator.message = slice.Messages[0]
-		iterator.messages = slice.Messages[1:]
-		return true
+	timestamp, _ := types.TimestampFromProto(m.Timestamp)
+	iterator.message = Message{
+		Position:  m.Position,
+		Type:      m.Type,
+		Timestamp: timestamp,
+		Header:    m.Header,
+		Value:     m.Value,
 	}
 
-	iterator.done = true
-	return false
+	return true
 }
 
 func (iterator *messageIterator) Get() (Message, error) {
 	return iterator.message, iterator.err
 }
 
-func (iterator *sliceIterator) Messages() MessageIterator {
-	return &messageIterator{
-		slices: iterator,
-	}
-}
-
 type sliceIterator struct {
 	done    bool
-	slice   Slice
+	slice   *Slice
 	err     error
-	from    int64
-	reverse bool
-
-	read func(from int64, reverse bool) (Slice, error)
+	advance func() (bool, *Slice, error)
 }
 
 func (iterator *sliceIterator) Advance() bool {
@@ -76,16 +74,10 @@ func (iterator *sliceIterator) Advance() bool {
 		return false
 	}
 
-	iterator.slice, iterator.err = iterator.read(iterator.from, iterator.reverse)
-	if iterator.err != nil {
-		return true
-	}
-
-	iterator.from = iterator.slice.Next
-	iterator.done = !iterator.slice.HasNext
-	return true
+	iterator.done, iterator.slice, iterator.err = iterator.advance()
+	return iterator.done
 }
 
-func (iterator *sliceIterator) Get() (Slice, error) {
+func (iterator *sliceIterator) Get() (*Slice, error) {
 	return iterator.slice, iterator.err
 }

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"log"
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/streamsdb/driver/go/sdb"
@@ -41,6 +42,7 @@ func main() {
 			println(">> appending to stream")
 			_, err := db.AppendStream("inputs", sdb.AnyVersion, sdb.MessageInput{Type: "string", Value: scanner.Bytes()})
 			if err != nil {
+				println(err)
 				errs <- errors.Wrap(err, "append error")
 			}
 		}
@@ -48,17 +50,38 @@ func main() {
 
 	// subscribe to the inputs stream and print messages
 	go func() {
-		subscription := db.SubscribeStream("inputs", -1, 10)
-		for slice := range subscription.Slices {
-			for _, msg := range slice.Messages {
-				println("received: ", string(msg.Value))
-			}
+	READ:
+		iterator, err := db.OpenStreamForward("inputs", sdb.StreamReadOptions{
+			KeepOpen: true,
+		})
+		if err != nil {
+			println("read error: ", err.Error())
+			time.Sleep(1 * time.Second)
+			goto READ
 		}
 
+		for iterator.Advance() {
+			msg, err := iterator.Get()
+			if err != nil {
+				println("read error: ", err.Error())
+				iterator.Close()
+				time.Sleep(1 * time.Second)
+				goto READ
+			}
+
+			println("received: ", string(msg.Value))
+		}
+
+		println("EOF")
+		iterator.Close()
+		time.Sleep(1 * time.Second)
+		goto READ
+
 		// the subscription has been closed, write error to channel
-		errs <- errors.Wrap(subscription.Err(), "read error")
+		errs <- errors.New("done")
 	}()
 
 	// blocking till an error is received
-	log.Fatalf((<-errs).Error())
+	err := <-errs
+	log.Fatalf("fatal error: %s", err)
 }
