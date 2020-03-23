@@ -72,11 +72,15 @@ func ExampleDB_OpenStreamForward() {
 	}
 
 	// read the messages from the stream
-	iterator, err := db.OpenStreamForward("example", sdb.StreamReadOptions{
+	found, iterator, err := db.OpenStreamForward("example", sdb.StreamReadOptions{
 		From: 1,
 	})
 	if err != nil {
 		log.Fatal("open stream error", err)
+	}
+
+	if !found {
+		log.Fatal("stream not found")
 	}
 
 	defer iterator.Close()
@@ -94,7 +98,6 @@ func ExampleDB_OpenStreamForward() {
 	// hello
 	// world
 	// !
-
 }
 
 func ExampleDB_ReadStreamForward() {

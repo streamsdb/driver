@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/gogo/protobuf/types"
+	"github.com/pkg/errors"
 	"github.com/streamsdb/driver/go/sdb/internal/api"
 )
 
@@ -20,6 +21,20 @@ type MessageIterator interface {
 
 	Advance() bool
 	Get() (Message, error)
+}
+
+type emptyMessageIterator struct{}
+
+func (e *emptyMessageIterator) Close() error {
+	return nil
+}
+
+func (e *emptyMessageIterator) Advance() bool {
+	return false
+}
+
+func (e *emptyMessageIterator) Get() (Message, error) {
+	return Message{}, errors.New("iterator never advanced")
 }
 
 type messageIterator struct {
