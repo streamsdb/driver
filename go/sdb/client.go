@@ -289,6 +289,15 @@ func (this *collectionScope) AppendStream(stream string, expectedVersion int64, 
 	return result.Position, nil
 }
 
+type Snapshot struct {
+	// the version of the stream during the read
+	Version int64
+	// the head of the stream during the read
+	Head int64
+
+	Message
+}
+
 type Message struct {
 	ID        string
 	Position  int64

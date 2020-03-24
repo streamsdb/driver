@@ -20,7 +20,7 @@ type MessageIterator interface {
 	io.Closer
 
 	Advance() bool
-	Get() (Message, error)
+	Get() (Snapshot, error)
 }
 
 type emptyMessageIterator struct{}
@@ -33,8 +33,8 @@ func (e *emptyMessageIterator) Advance() bool {
 	return false
 }
 
-func (e *emptyMessageIterator) Get() (Message, error) {
-	return Message{}, errors.New("iterator never advanced")
+func (e *emptyMessageIterator) Get() (Snapshot, error) {
+	return Snapshot{}, errors.New("iterator never advanced")
 }
 
 type messageIterator struct {
@@ -85,8 +85,8 @@ func (iterator *messageIterator) Advance() bool {
 	}
 }
 
-func (iterator *messageIterator) Get() (Message, error) {
-	return iterator.message, iterator.err
+func (iterator *messageIterator) Get() (Snapshot, error) {
+	return Snapshot{Version: iterator.streamVersion, Head: iterator.streamHead, Message: iterator.message}, iterator.err
 }
 
 type sliceIterator struct {
