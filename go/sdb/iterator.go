@@ -38,6 +38,9 @@ func (e *emptyMessageIterator) Get() (Message, error) {
 }
 
 type messageIterator struct {
+	streamVersion int64
+	streamHead    int64
+
 	cancel       context.CancelFunc
 	subscription api.Streams_IterateStreamClient
 
@@ -51,26 +54,35 @@ func (iterator *messageIterator) Close() error {
 }
 
 func (iterator *messageIterator) Advance() bool {
-	m, err := iterator.subscription.Recv()
-	iterator.err = err
+	for {
+		m, err := iterator.subscription.Recv()
+		iterator.err = err
 
-	if err != nil {
-		if err == io.EOF {
-			return false
+		if err != nil {
+			if err == io.EOF {
+				return false
+			}
+			return true
 		}
-		return true
-	}
 
-	timestamp, _ := types.TimestampFromProto(m.Timestamp)
-	iterator.message = Message{
-		Position:  m.Position,
-		Type:      m.Type,
-		Timestamp: timestamp,
-		Header:    m.Header,
-		Value:     m.Value,
-	}
+		switch c := m.Content.(type) {
+		case *api.IterationMessage_Snapshot:
+			iterator.streamHead = c.Snapshot.Head
+			iterator.streamVersion = c.Snapshot.Version
 
-	return true
+		case *api.IterationMessage_Message:
+			timestamp, _ := types.TimestampFromProto(c.Message.Timestamp)
+			iterator.message = Message{
+				Position:  c.Message.Position,
+				Type:      c.Message.Type,
+				Timestamp: timestamp,
+				Header:    c.Message.Header,
+				Value:     c.Message.Value,
+			}
+
+			return true
+		}
+	}
 }
 
 func (iterator *messageIterator) Get() (Message, error) {

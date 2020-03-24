@@ -405,7 +405,7 @@ type StreamReadOptions struct {
 func (this *collectionScope) OpenStreamForward(stream string, options StreamReadOptions) (bool, MessageIterator, error) {
 	ctx, cancel := context.WithCancel(this.ctx)
 
-	subscription, err := this.client.IterateStream(ctx, &api.ReadStreamRequest{
+	subscription, err := this.client.IterateStream(ctx, &api.IterateStreamRequest{
 		Database: this.db,
 		Stream:   stream,
 		From:     options.From,
