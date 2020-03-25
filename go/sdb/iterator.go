@@ -19,11 +19,22 @@ type SliceIterator interface {
 type MessageIterator interface {
 	io.Closer
 
+	Version() int64
+	Head() int64
+
 	Advance() bool
 	Get() (Snapshot, error)
 }
 
 type emptyMessageIterator struct{}
+
+func (e *emptyMessageIterator) Version() int64 {
+	return 0
+}
+
+func (e *emptyMessageIterator) Head() int64 {
+	return 0
+}
 
 func (e *emptyMessageIterator) Close() error {
 	return nil
@@ -35,6 +46,14 @@ func (e *emptyMessageIterator) Advance() bool {
 
 func (e *emptyMessageIterator) Get() (Snapshot, error) {
 	return Snapshot{}, errors.New("iterator never advanced")
+}
+
+func (e *messageIterator) Version() int64 {
+	return e.streamVersion
+}
+
+func (e *messageIterator) Head() int64 {
+	return e.streamHead
 }
 
 type messageIterator struct {
