@@ -43,7 +43,7 @@ func TestReadStream(t *testing.T) {
 	db := conn.DB("")
 
 	stream := t.Name() + "-stream"
-	messages := make([]sdb.MessageInput, 10, 10)
+	messages := make([]sdb.MessageInput, 10)
 	for i := range messages {
 		messages[i] = sdb.MessageInput{
 			Type:   fmt.Sprintf("type-%v", i),

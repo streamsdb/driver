@@ -51,7 +51,7 @@ func main() {
 	// subscribe to the inputs stream and print messages
 	go func() {
 	READ:
-		iterator, err := db.OpenStreamForward("inputs", sdb.StreamReadOptions{
+		_, iterator, err := db.OpenStreamForward("inputs", sdb.StreamReadOptions{
 			KeepOpen: true,
 		})
 		if err != nil {

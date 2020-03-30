@@ -56,7 +56,7 @@ type DB interface {
 	AppendStream(stream string, expectedVersion int64, messages ...MessageInput) (int64, error)
 	DeleteMessage(stream string, at int64) error
 	DeleteStream(stream string) error
-	OpenStreamForward(stream string, options StreamReadOptions) (bool, MessageIterator, error)
+	OpenStreamForward(stream string, options StreamReadOptions) (MessageIterator, error)
 	ReadStreamForward(stream string, from int64, limit int) (Slice, error)
 	ReadStreamBackward(stream string, from int64, limit int) (Slice, error)
 	ReadGlobal(from []byte, limit int) (GlobalSlice, error)
@@ -411,7 +411,7 @@ type StreamReadOptions struct {
 	KeepOpen bool
 }
 
-func (this *collectionScope) OpenStreamForward(stream string, options StreamReadOptions) (bool, MessageIterator, error) {
+func (this *collectionScope) OpenStreamForward(stream string, options StreamReadOptions) (MessageIterator, error) {
 	ctx, cancel := context.WithCancel(this.ctx)
 
 	subscription, err := this.client.IterateStream(ctx, &api.IterateStreamRequest{
@@ -423,14 +423,10 @@ func (this *collectionScope) OpenStreamForward(stream string, options StreamRead
 	if err != nil {
 		cancel()
 
-		// TODO: typed validation
-		if err.Error() == "stream not found" {
-			return false, &emptyMessageIterator{}, nil
-		}
-		return false, nil, err
+		return nil, err
 	}
 
-	return true, &messageIterator{cancel: cancel, subscription: subscription}, nil
+	return &messageIterator{cancel: cancel, subscription: subscription}, nil
 }
 
 func (this *collectionScope) ReadStreamForward(stream string, from int64, limit int) (Slice, error) {
